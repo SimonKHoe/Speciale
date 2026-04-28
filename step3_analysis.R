@@ -24,7 +24,7 @@ df_analysis <-
 df_failed <-
   df_analysis |>
   filter(Q8_1 == 0 | is.na(Q8_1)) |>
-  filter(Progress == 100)
+  filter(Progress > 80)
 
 # Define a df where cutoff is introduced
 df_cutoff_filtered <-
