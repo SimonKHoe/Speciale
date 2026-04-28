@@ -82,15 +82,16 @@ newdata_2 <- data.frame(
   pre_afstand_total = mean(df$pre_afstand_total, na.rm = TRUE)
 )
 
-labels_vec <- setNames(
-  paste0(pred_df$treatment, "\n(n = ", pred_df$n, ")"),
-  pred_df$treatment
-)
-
 pred <- predict(pre_learning_reg, newdata = newdata_2, interval = "confidence")
 
 pred_df <- bind_cols(newdata_2, as.data.frame(pred)) |>
   left_join(n_df, by = "treatment") # Join the n's onto the plot df
+
+
+labels_vec <- setNames(
+  paste0(pred_df$treatment, "\n(n = ", pred_df$n, ")"),
+  pred_df$treatment
+)
 
 p_pred <-
   ggplot(pred_df, aes(x = treatment, y = fit)) +

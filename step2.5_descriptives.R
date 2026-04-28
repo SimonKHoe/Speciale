@@ -272,23 +272,56 @@ df |>
   geom_boxplot() +
   theme_simon(base_size = 14, ticks = FALSE) +
   geom_hline(yintercept = 0, size = 1.1, color = "grey") +
-  scale_y_continuous(breaks = seq(-1, 2, by = 0.5)) +
-  labs(title = "Fordelingen af pre-afstand mellem de to treatments", y = "Samlet læring", x = "Treatment") +
+  scale_y_continuous(breaks = seq(-1, 6, by = 0.5)) +
+  labs(title = "Fordelingen af pre-afstand mellem de to treatments", y = "Pre-afstand", x = "Treatment") +
   theme(
     axis.title.x = element_text(margin = margin(t = 15)),
     axis.title.y = element_text(margin = margin(r = 15)))
 
-# Post - placering
+# Spredning samlet
+df |>
+  ggplot(aes(x = pre_afstand_total)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 binwidth = 0.1, alpha = 0.4) +
+  geom_density(linewidth = 1) +
+  labs(
+    title = "Fordelingen i afstand inden treatment",
+    y = "Tæthed"
+  ) +
+  theme_simon(base_size = 14) +
+  theme(
+    axis.title.x = element_blank(),
+    panel.spacing = unit(1.5, "cm")
+  )
+
+# Post - placering #
+# Delt op på treatment
 df |>
   ggplot(aes(x = treatment, y = post_afstand_total)) +
   geom_boxplot() +
   theme_simon(base_size = 14, ticks = FALSE) +
   geom_hline(yintercept = 0, size = 1.1, color = "grey") +
-  scale_y_continuous(breaks = seq(-1, 2, by = 0.5)) +
-  labs(title = "Fordelingen af post-afstand mellem de to treatments", y = "Samlet læring", x = "Treatment") +
+  scale_y_continuous(breaks = seq(-1, 6, by = 0.5)) +
+  labs(title = "Fordelingen af post-afstand mellem de to treatments", y = "Post-afstand", x = "Treatment") +
   theme(
     axis.title.x = element_text(margin = margin(t = 15)),
     axis.title.y = element_text(margin = margin(r = 15)))
+
+# Spredning samlet
+df |>
+  ggplot(aes(x = post_afstand_total)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 binwidth = 0.1, alpha = 0.4) +
+  geom_density(linewidth = 1) +
+  labs(
+    title = "Fordelingen i afstand efter treatment",
+    y = "Tæthed"
+  ) +
+  theme_simon(base_size = 14) +
+  theme(
+    axis.title.x = element_blank(),
+    panel.spacing = unit(1.5, "cm")
+  )
 
 
 ## BOXPLOT TREATMENTS ##
@@ -300,7 +333,7 @@ df |>
   geom_boxplot() +
   theme_simon(base_size = 14, ticks = FALSE) +
   geom_hline(yintercept = 0) +
-  scale_y_continuous(breaks = seq(-1, 2, by = 0.5)) +
+  scale_y_continuous(breaks = seq(-6, 6, by = 0.5)) +
   labs(title = "Fordelingen af læring mellem de to treatments", y = "Samlet læring", x = "Treatment") +
   theme(
         axis.title.x = element_text(margin = margin(t = 15)),
@@ -366,7 +399,8 @@ tillid_bar_facet <-
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
-    panel.spacing = unit(1.5, "cm")
+    panel.spacing = unit(1.5, "cm"),
+    plot.caption = element_text(margin = margin(t = 40))
   )
 
 tillid_bar / tillid_bar_facet
@@ -465,8 +499,9 @@ df_failed |> # Needs to be the df version with both pre and post cutoff
         axis.title.y = element_text(margin = margin(r = 15)),
         axis.ticks.length = unit(2.5, "pt")) +
   scale_x_datetime(
-    date_labels = "%d-%m %H:%M",
-    guide = guide_axis(n.dodge = 2, check.overlap = TRUE)
+    breaks = scales::breaks_pretty(n = 4),
+    date_labels = "%d-%m\n%H:%M",
+    guide = guide_axis(check.overlap = TRUE)
   )
 
 
