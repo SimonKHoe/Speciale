@@ -324,6 +324,37 @@ df |>
   )
 
 
+# Manipulation check #
+df |>
+  ggplot(aes(x = Q9)) +
+  geom_bar() +
+  labs(
+    title = "Fordelingen af svar til manipulationstjek, absolutte tal",
+    x = "Hvad handlede din [treatment] primært om?"
+    # ,caption = str_wrap(
+    #   "Note: Respondenterne har svaret på spørgsmålet: 'Hvor troværdig synes du, at den information du har fået fra [Treatment] er?'",
+    #   60)
+  ) +
+  theme_simon(base_size = 12) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.spacing = unit(1.5, "cm")
+  ) +
+  scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 10))
+
+# Chat bot issues #
+df_long_cb <- df |>
+  select(-Q8_5_TEXT) |>
+  select(starts_with("Q8_")) |>
+  pivot_longer(
+    cols = everything(),
+    names_to = "option",
+    values_to = "selected"
+  ) |>
+  filter(!is.na(selected))
+
+
 ## BOXPLOT TREATMENTS ##
 
 # Læring #

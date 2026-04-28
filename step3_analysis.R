@@ -1,5 +1,5 @@
 ### Created on: 26.04.04 ###
-### Last edited: 26.04.20 ###
+### Last edited: 26.04.28 ###
 
 # Setup
 library(dplyr)
@@ -24,7 +24,7 @@ df_analysis <-
 df_failed <-
   df_analysis |>
   filter(Q8_1 == 0 | is.na(Q8_1)) |>
-  filter(partier_folketing == "179")
+  filter(Progress == 100)
 
 # Define a df where cutoff is introduced
 df_cutoff_filtered <-
@@ -110,7 +110,7 @@ p_pred <-
 
 p_pred
 
-## Line chart ##
+## Robustness ##
 
 
 
@@ -138,10 +138,10 @@ summary(lm(læring_total ~ treatment + pre_afstand_total, data = df))
 # What happens then if we control for trust with learning?
 summary(lm(læring_total ~ treatment + Tillid + pre_afstand_total, data = df))
 
-# Trust saps the difference between the two treatments
+# Trust does NOT sap the difference between the two treatments, but it looks like it could have an effect
 
 # Trust explain learning?
-summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df))
+summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df)) # Without treatment, trust explains learning
 
 # Trust explain learning for CB vs. artikel
 summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df |> filter(treatment == "chat bot")))
@@ -175,6 +175,8 @@ summary(lm(post_viden ~ subjektiv_forståelse, data = df))
 summary(lm(post_viden ~ subjektiv_forståelse, data = df |> filter(treatment == "chat bot")))
 
 summary(lm(post_viden ~ subjektiv_forståelse, data = df |> filter(treatment == "artikel")))
+
+# The relationship is stronger for the article but is positive and significant in both
 
 summary(lm(post_viden ~ subjektiv_forståelse * treatment, data = df))
 
@@ -232,3 +234,4 @@ df_analysis |>
 # It's useless, let's try to have a look at it anyway
 
 summary(lm(læring_total ~ partier_folketing + pre_afstand_total, data = df_analysis))
+

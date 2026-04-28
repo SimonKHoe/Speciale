@@ -55,6 +55,10 @@ df_analysis <-
     læring_total = rowMeans(
       pick(læring_DF, læring_LA, læring_SF, læring_RV, læring_EL, læring_V),
       na.rm = TRUE
+    ),
+    læring_robust_sf = rowMeans( # Create a robustness test version without SF
+      pick(læring_DF, læring_LA, læring_RV, læring_EL, læring_V),
+      na.rm = TRUE
     )
   ) |>
   mutate( # Average of pre-placement distance

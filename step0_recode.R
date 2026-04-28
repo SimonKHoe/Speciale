@@ -13,12 +13,13 @@ library(labelled)
 
 # Load data
 df <-
-  read_sav("260423_data.sav") |>
+  read_sav("260428_ekstra.sav") |>
   mutate(
     across(where(is.character), as_factor), # All string vars to factors
     across(-all_of(c("Q9", "Q7", "Q48")) & where(is.labelled), haven::zap_labels), # Zap labels for numeric vars
     across(all_of(c("Q9", "Q7", "Q48")), as_factor) # keep these two as factors
-  )
+  ) |>
+  select(-Q47)
 
 
 # Recode the df

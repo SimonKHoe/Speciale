@@ -13,19 +13,59 @@ library(labelled)
 library(tidyr)
 library(patchwork)
 library(ggthemes)
+library(officer)
 
 ## Load data ##
 df_analysis <-
   read_rds("df_analysis.rds") |>
   mutate(conv_id = row_number())
 
+
+# Define the df with the failed interactions filtered and manipulation check
+df_failed <-
+  df_analysis |>
+  filter(Q8_1 == 0 | is.na(Q8_1)) # |>
+#  filter(partier_folketing == "179")
+
+# Define a df where cutoff is introduced
+df_cutoff_filtered <-
+  df_failed |>
+  filter((treatment == "chat bot" & after_cutoff == "after" | treatment == "artikel")) |>
+  mutate(conv_id = row_number())
+
+# Set df for the entire regression results viz section here
+# df <- df_analysis
+df <- df_cutoff_filtered
+# df <- df_failed
+
+## EXPORT TO READ ##
+df_export <- df |>
+  distinct(conv_id, LUCIDUserFacingHistory) |>
+  mutate(
+    conversation_clean = LUCIDUserFacingHistory |>
+      str_replace_all("\\[assistant\\]:", "\n\nASSISTANT:\n") |>
+      str_replace_all("\\[user\\]:", "\n\nUSER:\n")
+  )
+
+doc <- read_docx()
+
+for (i in seq_len(nrow(df_export))) {
+  doc <- doc |>
+    body_add_par(paste0("Conversation ID: ", df_export$conv_id[i]), style = "heading 1") |>
+    body_add_par(df_export$conversation_clean[i], style = "Normal") |>
+    body_add_break()
+}
+
+print(doc, target = "conversations_readable.docx")
+
+
 # Check the variables
-LUCIDUserfacinghistory <- df_analysis |> pull(LUCIDUserFacingHistory)
+LUCIDUserfacinghistory <- df |> pull(LUCIDUserFacingHistory)
 
 # Create a table in long format for each round of conversations
 conversation_table <- map2_dfr(
-  df_analysis$LUCIDUserFacingHistory,
-  seq_len(nrow(df_analysis)),
+  df$LUCIDUserFacingHistory,
+  seq_len(nrow(df)),
   \(txt, id) {
     tibble(raw = txt, conv_id = id) %>%
       mutate(turns = str_split(
@@ -44,10 +84,10 @@ conversation_table <- map2_dfr(
   }
 )
 
-# Join df_analysis tilbage på, og lav interaktionsvariable
+# Join df tilbage på, og lav interaktionsvariable
 conversation_table_joined <-
   conversation_table |>
-  left_join(df_analysis, by = "conv_id")
+  left_join(df, by = "conv_id")
 
 
 #### HYPOTHESIS 2 ####
@@ -61,13 +101,13 @@ max_turn <-
   select(conv_id, turn_order) |>
   rename(max_turn = turn_order)
 
-df_analysis_hyp_2 <-
-  df_analysis |>
+df_hyp_2 <-
+  df |>
   left_join(max_turn)
 
 # index creation
-df_analysis_hyp_2 <-
-  df_analysis_hyp_2 |>
+df_hyp_2 <-
+  df_hyp_2 |>
   mutate( # add variable, that countrs # units
     n_chars = nchar(
       str_remove(
@@ -99,73 +139,57 @@ conversation_table_joined |>
   theme_minimal()
 
 # Look at learning distribution for interaction index
-df_analysis_hyp_2 |>
+df_hyp_2 |>
   ggplot(aes(x = interaction_index, y = læring_total)) +
   geom_point() +
   theme_minimal()
 
 # Fit a reg line
-df_analysis_hyp_2 |>
+df_hyp_2 |>
   ggplot(aes(x = interaction_index, y = læring_total)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_minimal()
 
 ### Interaction index regression ###
-summary(lm(læring_total ~ interaction_index_chars, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(læring_total ~ interaction_index_chars, data = df_hyp_2))
 
 ### Interaction index regression ###
-summary(lm(læring_total ~ interaction_index_chars + pre_afstand_total, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(læring_total ~ interaction_index_chars + pre_afstand_total, data = df_hyp_2))
 
 ### Let's look at nchar ###
-summary(lm(læring_total ~ n_chars + max_turn + conv_time_s, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(læring_total ~ n_chars + max_turn + conv_time_s, data = df_hyp_2))
 
 ### Let's look at them z transformed
-summary(lm(læring_total ~ z_chars + z_rounds + z_time, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(læring_total ~ z_chars + z_rounds + z_time, data = df_hyp_2))
 
 ### Let's look at z_chars
-summary(lm(læring_total ~ z_chars, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(læring_total ~ z_chars, data = df_hyp_2))
 
 ### Interaction - z_chars only works with the attention index
-summary(lm(læring_total ~ z_chars * interaction_index + pre_afstand_total, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(læring_total ~ z_chars * interaction_index + pre_afstand_total, data = df_hyp_2 ))
 
 ### Double interaction
-summary(lm(læring_total ~ z_chars * z_time * z_rounds + pre_afstand_total, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(læring_total ~ z_chars * z_time * z_rounds + pre_afstand_total, data = df_hyp_2))
 
 ### Trust added
-summary(lm(læring_total ~ interaction_index_chars + pre_afstand_total + Tillid, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(læring_total ~ interaction_index_chars + pre_afstand_total + Tillid, data = df_hyp_2 |> filter(after_cutoff == "after")))
 
 ### Interaction - z_chars only works with the attention index
-summary(lm(læring_total ~ z_chars * interaction_index + pre_afstand_total + Tillid, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(læring_total ~ z_chars * interaction_index + pre_afstand_total + Tillid, data = df_hyp_2))
 
 ### Subjective understanding added
-summary(lm(læring_total ~ interaction_index_chars + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(læring_total ~ interaction_index_chars + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
 
 ### Interaction - z_chars only works with the attention index
-summary(lm(læring_total ~ z_chars * interaction_index + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(læring_total ~ z_chars * interaction_index + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
 
 ### Pre-knowledge relationship with interaction index
-summary(lm(interaction_index ~ pre_afstand_total, data = df_analysis_hyp_2 |> filter(after_cutoff == "after")))
+summary(lm(interaction_index ~ pre_afstand_total, data = df_hyp_2))
 
 
-
-
-
-
-
-
-
-# No comparison what so ever
 
 #### Classifications ####
-df_analysis_hyp_2 <-
-  df_analysis_hyp_2 |>
-  mutate(turn_dummy = if_else(max_turn > 3, "elaborative", "no elaboration"))
-
-
-# Lets check learning based on turn_dummy
-reg_turn_dummy <- lm(læring_total ~ turn_dummy, data = df_analysis_hyp_2)
-summary(reg_turn_dummy)
 
 
 #### DESCRIPTIVES ON INTERACTIONS ####
@@ -180,12 +204,12 @@ average_turn_num <-
 
 # Grab the average length of conversations
 average_conv_length <-
-  df_analysis_hyp_2 |>
+  df_hyp_2 |>
   summarise(averabe_conv_length = mean(conv_time_s, na.rm = TRUE))
 
 # Grab the average number of characters for each user - opening message from Polibob
 average_chars_num <-
-  df_analysis_hyp_2 |>
+  df_hyp_2 |>
   filter(treatment == "chat bot") |>
   summarise(average_chars_num = mean(n_chars, na.rm = TRUE))
 
@@ -211,7 +235,7 @@ p1 <-
   )
 
 p2 <-
-  df_analysis_hyp_2 |>
+  df_hyp_2 |>
   ggplot(aes(x = conv_time_s)) +
   geom_histogram(bins = 30, binwidth = 40) +
 #  scale_y_continuous(limits = c(0, 13), breaks = seq(0, 13, by = 4)) + # Change the y-axis truncation here, when answers come in
@@ -226,7 +250,7 @@ p2 <-
 
 
 p3 <-
-  df_analysis_hyp_2 |>
+  df_hyp_2 |>
   filter(treatment == "chat bot") |>
   ggplot(aes(x = n_chars)) +
   geom_histogram(bins = 30, binwidth = 500) +
@@ -245,33 +269,30 @@ combined_histograms <-
   p1 + p2 + p3
 
 
-# The average interaction
-mean_num_interactions <-
-  conversation_table_joined
 
 
+### Line chart - what happened to chat bot interactions after prompt fix? ###
+means_df_3 <-
+  df_analysis_hyp_2 |>
+  group_by(source_prompt) |>
+  summarise(
+    mean_learning = mean(interaction_index, na.rm = TRUE),
+    .groups = "drop"
+  )
 
-# Line chart - what happened to chat bot interactions after prompt fix?
-df_failed |> # Needs to be the df version with both pre and post cutoff
-  ggplot(aes(x = StartDate_cph, y = læring_total, group = treatment)) +
-  #  geom_line(aes(color = treatment), linewidth = 0.8, alpha = 0.3) +
-  geom_point(aes(color = treatment, shape = treatment), size = 2, alpha = 0.5) +
-  #  geom_hline(yintercept = 0, linetype = "solid", linewidth = 1, alpha = 0.6) +
+df_hyp_2 |> # Needs to be the df version with both pre and post cutoff
+  ggplot(aes(x = StartDate_cph, y = interaction_index)) +
+  geom_point(size = 2, alpha = 0.5) +
   geom_hline(
-    data = means_df_2,
-    aes(yintercept = mean_learning, color = treatment),
+    data = means_df_3,
+    aes(yintercept = mean_learning),
     linewidth = 1, linetype = "longdash"
   ) +
   facet_wrap(~source_prompt, scales = "free_x",
              labeller = labeller(source_prompt = label_wrap_gen(width = 20))) +
-  labs(y = "Læring", x = "Tidspunkt / Dato", title = "Den gennemsnitlige læring for de to treatmenttyper,
-       fordelt over de tre skelsættende indsamlingsperioder i projektet",
-       caption = "Note: De stiplede linjer viser gennemsnittet af læring for perioden inden for hvert treatment.") +
+  labs(y = "Interaktionsmængde (Normaliseret)", x = "Tidspunkt / Dato", title = "Den gennemsnitlige chat bot interaktionsmængde,
+       fordelt over de tre skelsættende indsamlingsperioder i projektet") +
   theme_simon(base_size = 14) +
-  scale_color_manual(values = c(
-    "chat bot" = "#000000",
-    "artikel"  = "#A3A3A3"
-  )) +
   theme(panel.spacing = unit(1, "cm"),
         axis.title.x = element_text(margin = margin(t = 15)),
         axis.title.y = element_text(margin = margin(r = 15)),
