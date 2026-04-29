@@ -1,5 +1,5 @@
 ### Created on: 26.04.04 ###
-### Last edited: 26.04.23 ###
+### Last edited: 26.04.29 ###
 
 # Setup
 library(dplyr)
@@ -107,7 +107,8 @@ df_analysis <-
            "Efter fix af prompt - personlige opslag",
            "Efter fix - Facebook grupper"
          )
-         )
+         ) |>
+  mutate(treatment = fct_relevel(treatment, "artikel")) # Turn the article into the reference cat
 
 
 # Export the analysis ready df

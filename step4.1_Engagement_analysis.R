@@ -23,8 +23,8 @@ df_analysis <-
 # Define the df with the failed interactions filtered and manipulation check
 df_failed <- # THis becomes ITT
   df_analysis |>
-#  filter(Q8_1 == 0 | is.na(Q8_1)) |>
-#  filter(partier_folketing == "179") |>
+  #  filter(Q8_1 == 0 | is.na(Q8_1)) |>
+  #  filter(partier_folketing == "179") |>
   filter(Progress > 75) # Remove people who haven't done post-placements
 
 # Define a df where cutoff is introduced
@@ -39,56 +39,56 @@ df <- df_cutoff_filtered
 # df <- df_failed
 
 
-# # THIS DEFINES THE FILTERED/LATE DF
-#
-# ### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS ### TODO: STREAMLINE
-# # Create a table in long format for each round of conversations
-# conversation_table <- map2_dfr(
-#   df$LUCIDUserFacingHistory,
-#   seq_len(nrow(df)),
-#   \(txt, id) {
-#     tibble(raw = txt, conv_id = id) %>%
-#       mutate(turns = str_split(
-#         raw,
-#         "\\s*(?=\\[(?:assistant|user)\\]:)",
-#         simplify = FALSE
-#       )) %>%
-#       unnest(turns) %>%
-#       filter(turns != "") %>%
-#       mutate(
-#         turn_order = row_number(),
-#         role = str_extract(turns, "(?<=\\[)(assistant|user)(?=\\]:)"),
-#         content = str_remove(turns, "^\\[(?:assistant|user)\\]:\\s*")
-#       ) %>%
-#       select(conv_id, turn_order, role, content)
-#   }
-# )
-#
-# # Join df tilbage på, og lav interaktionsvariable
-# conversation_table_joined <-
-#   conversation_table |>
-#   left_join(df, by = "conv_id")
-#
-# # Index on regression granularity
-# max_turn <-
-#   conversation_table_joined |>
-#   group_by(conv_id) |>
-#   slice_max(turn_order, n = 1) |>
-#   ungroup() |>
-#   select(conv_id, turn_order) |>
-#   rename(max_turn = turn_order)
-#
-# df_hyp_2 <- # Left joins max turns back onto OG df
-#   df |>
-#   left_join(max_turn)
-#
-# # Turn df_hyp_2 (joined max_turns) into the new df
-# df <- ### THIS IS THE FILTER DF - ENGAGEMENT V. ENGAGEMENT
-#   df_hyp_2 |>
-#   filter(max_turn != 1 | is.na(max_turn)) |>  # Now we can filter out 1-turn chat bot interactions by keeping bigger than 1 or NA (article)
+# THIS DEFINES THE FILTERED/LATE DF
+
+### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS ### TODO: STREAMLINE
+# Create a table in long format for each round of conversations
+conversation_table <- map2_dfr(
+  df$LUCIDUserFacingHistory,
+  seq_len(nrow(df)),
+  \(txt, id) {
+    tibble(raw = txt, conv_id = id) %>%
+      mutate(turns = str_split(
+        raw,
+        "\\s*(?=\\[(?:assistant|user)\\]:)",
+        simplify = FALSE
+      )) %>%
+      unnest(turns) %>%
+      filter(turns != "") %>%
+      mutate(
+        turn_order = row_number(),
+        role = str_extract(turns, "(?<=\\[)(assistant|user)(?=\\]:)"),
+        content = str_remove(turns, "^\\[(?:assistant|user)\\]:\\s*")
+      ) %>%
+      select(conv_id, turn_order, role, content)
+  }
+)
+
+# Join df tilbage på, og lav interaktionsvariable
+conversation_table_joined <-
+  conversation_table |>
+  left_join(df, by = "conv_id")
+
+# Index on regression granularity
+max_turn <-
+  conversation_table_joined |>
+  group_by(conv_id) |>
+  slice_max(turn_order, n = 1) |>
+  ungroup() |>
+  select(conv_id, turn_order) |>
+  rename(max_turn = turn_order)
+
+df_hyp_2 <- # Left joins max turns back onto OG df
+  df |>
+  left_join(max_turn)
+
+# Turn df_hyp_2 (joined max_turns) into the new df
+df <- ### THIS IS THE FILTER DF - ENGAGEMENT V. ENGAGEMENT
+  df_hyp_2 |>
+  filter(max_turn != 1 | is.na(max_turn)) |>  # Now we can filter out 1-turn chat bot interactions by keeping bigger than 1 or NA (article)
 
 
-#### ####
+  #### ####
 
 #### HYPOTHESIS 1 ####
 # Test whether the two treatments actually taught them something statistically different from 0
@@ -107,9 +107,6 @@ t.test(df_article$læring_total) # two sided t-test
 
 ## Chat bot ##
 t.test(df_chat_bot$læring_total) # two sided t-test
-
-# Two item t-test
-t.test(læring_total ~ treatment, data = df)
 
 # Bivariate
 summary(lm(læring_total ~ treatment, data = df))
@@ -291,8 +288,8 @@ df |>
   theme_tufte(base_size = 14) +
   labs(title = "Andel af respondentsvar til, hvor mange sæder, der er i Folketinget", y = "Andel", x = "Svarmuligheder") +
   theme(
-        axis.title.x = element_text(margin = margin(t = 15)),
-        axis.title.y = element_text(margin = margin(r = 15)))
+    axis.title.x = element_text(margin = margin(t = 15)),
+    axis.title.y = element_text(margin = margin(r = 15)))
 
 # It's useless, let's try to have a look at it anyway
 

@@ -23,8 +23,9 @@ df_analysis <-
 # Define the df with the failed interactions filtered and manipulation check
 df_failed <-
   df_analysis |>
-  filter(Q8_1 == 0 | is.na(Q8_1)) |>
-  filter(partier_folketing == "179")
+#  filter(Q8_1 == 0 | is.na(Q8_1)) |>
+#  filter(partier_folketing == "179")
+  filter(Progress > 75)
 
 # Define a df where cutoff is introduced
 df_cutoff_filtered <-
@@ -42,6 +43,8 @@ df <- df_cutoff_filtered
 #### Descriptives ####
 
 ### PARTIES ###
+# Pre-placements #
+# Prep the plot #
 df_pre_long <-
   df |>
   select(pre_afstand_DF, pre_afstand_LA, pre_afstand_SF,
@@ -293,6 +296,28 @@ df |>
     axis.title.x = element_blank(),
     panel.spacing = unit(1.5, "cm")
   )
+
+
+# Pre distance average
+mean_pre_distance <-
+  df |>
+  mutate(mean_pre = mean(pre_afstand_total)) |>
+  pull(mean_pre)
+
+# Mean pre distance chat bot
+mean_pre_distance_chatbot <-
+  df |>
+  filter(treatment == "chat bot") |>
+  mutate(mean_pre = mean(pre_afstand_total)) |>
+  pull(mean_pre)
+
+# Mean pre distance article
+mean_pre_distance_article <-
+  df |>
+  filter(treatment == "artikel") |>
+  mutate(mean_pre = mean(pre_afstand_total)) |>
+  pull(mean_pre)
+
 
 # Post - placering #
 # Delt op på treatment
