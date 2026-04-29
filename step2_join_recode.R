@@ -25,6 +25,7 @@ facebook <- as.POSIXct("2026-04-22 08:00:00", tz = "Europe/Copenhagen") # This i
 df_analysis <-
   df_merged |>
   filter(Status == 0) |> # Keep only non-preview
+  select(-cutoff) |>  # This is legacy embedded data from Qualtrics
   mutate( # Calculate the learning for each party
          # DF
          pre_afstand_DF = abs(DF - Q41_1), # Peoples distance from expert placement, pre

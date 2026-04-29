@@ -24,8 +24,9 @@ df_analysis <-
 # Define the df with the failed interactions filtered and manipulation check
 df_failed <-
   df_analysis |>
-  filter(Q8_1 == 0 | is.na(Q8_1)) # |>
+  filter(Q8_1 == 0 | is.na(Q8_1)) |>
 #  filter(partier_folketing == "179")
+  filter(Progress == 100)
 
 # Define a df where cutoff is introduced
 df_cutoff_filtered <-
@@ -273,7 +274,7 @@ combined_histograms <-
 
 ### Line chart - what happened to chat bot interactions after prompt fix? ###
 means_df_3 <-
-  df_analysis_hyp_2 |>
+  df_hyp_2 |>
   group_by(source_prompt) |>
   summarise(
     mean_learning = mean(interaction_index, na.rm = TRUE),
@@ -302,4 +303,5 @@ df_hyp_2 |> # Needs to be the df version with both pre and post cutoff
     date_labels = "%d-%m\n%H:%M",
     guide = guide_axis(check.overlap = TRUE)
   )
+
 

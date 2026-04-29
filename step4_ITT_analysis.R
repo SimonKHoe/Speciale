@@ -17,24 +17,75 @@ library(ggthemes)
 
 #### Load data ####
 df_analysis <-
-  read_rds("df_analysis.rds")
-
+  read_rds("df_analysis.rds") |>
+  mutate(conv_id = row_number())
 
 # Define the df with the failed interactions filtered and manipulation check
-df_failed <-
+df_failed <- # THis becomes ITT
   df_analysis |>
-  filter(Q8_1 == 0 | is.na(Q8_1)) |>
-  filter(Progress > 80)
+#  filter(Q8_1 == 0 | is.na(Q8_1)) |>
+#  filter(partier_folketing == "179") |>
+  filter(Progress > 75) # Remove people who haven't done post-placements
 
 # Define a df where cutoff is introduced
 df_cutoff_filtered <-
   df_failed |>
-  filter((treatment == "chat bot" & after_cutoff == "after" | treatment == "artikel"))
+  filter((treatment == "chat bot" & after_cutoff == "after" | treatment == "artikel")) |>
+  mutate(conv_id = row_number())
 
-# Set df for the entire regression results viz section here
+# THIS IS THE ITT DF
 # df <- df_analysis
 df <- df_cutoff_filtered
 # df <- df_failed
+
+
+# THIS DEFINES THE ATE DF
+
+### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS ### TODO: STREAMLINE
+# Create a table in long format for each round of conversations
+conversation_table <- map2_dfr(
+  df$LUCIDUserFacingHistory,
+  seq_len(nrow(df)),
+  \(txt, id) {
+    tibble(raw = txt, conv_id = id) %>%
+      mutate(turns = str_split(
+        raw,
+        "\\s*(?=\\[(?:assistant|user)\\]:)",
+        simplify = FALSE
+      )) %>%
+      unnest(turns) %>%
+      filter(turns != "") %>%
+      mutate(
+        turn_order = row_number(),
+        role = str_extract(turns, "(?<=\\[)(assistant|user)(?=\\]:)"),
+        content = str_remove(turns, "^\\[(?:assistant|user)\\]:\\s*")
+      ) %>%
+      select(conv_id, turn_order, role, content)
+  }
+)
+
+# Join df tilbage på, og lav interaktionsvariable
+conversation_table_joined <-
+  conversation_table |>
+  left_join(df, by = "conv_id")
+
+# Index on regression granularity
+max_turn <-
+  conversation_table_joined |>
+  group_by(conv_id) |>
+  slice_max(turn_order, n = 1) |>
+  ungroup() |>
+  select(conv_id, turn_order) |>
+  rename(max_turn = turn_order)
+
+df_hyp_2 <- # Left joins max turns back onto OG df
+  df |>
+  left_join(max_turn)
+
+# Turn df_hyp_2 (joined max_turns) into the new df
+df <- ### THIS IS THE ATE DF
+  df_hyp_2 |>
+  filter(max_turn != 1 | is.na(max_turn)) # Now we can filter out 1-turn chat bot interactions by keeping bigger than 1 or NA (article)
 
 #### ####
 
@@ -61,6 +112,8 @@ summary(lm(læring_total ~ treatment, data = df))
 
 # Pre-learning control
 pre_learning_reg <- lm(læring_total ~ treatment + pre_afstand_total, data = df)
+summary(pre_learning_reg)
+
 
 # ANCOVA Robustness
 summary(lm(post_afstand_total ~ treatment + pre_afstand_total, data = df))
@@ -138,7 +191,7 @@ summary(lm(læring_total ~ treatment + pre_afstand_total, data = df))
 # What happens then if we control for trust with learning?
 summary(lm(læring_total ~ treatment + Tillid + pre_afstand_total, data = df))
 
-# Trust does NOT sap the difference between the two treatments, but it looks like it could have an effect
+# Trust DOES sap the difference between the two treatments, but it looks like it could have an effect
 
 # Trust explain learning?
 summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df)) # Without treatment, trust explains learning
@@ -149,7 +202,7 @@ summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df |> filter(treat
 
 # Interaktion
 summary(lm(læring_total ~ Tillid * treatment + pre_afstand_total, data = df))
-# We lack power for the interaction
+# We lack power for the interaction - but could also be that it isn't there
 
 
 ## Robustness ##
@@ -183,7 +236,7 @@ summary(lm(post_viden ~ subjektiv_forståelse * treatment, data = df))
 summary(lm(læring_total ~ subjektiv_forståelse, data = df |> filter(treatment == "artikel")))
 
 # Visualize the correlation facetted
-df_analysis |>
+df |>
   ggplot(aes(y = post_viden, x = subjektiv_forståelse, groups = treatment)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
@@ -194,7 +247,7 @@ df_analysis |>
 
 # Exploration
 df_h4 <-
-  df_analysis |>
+  df |>
   mutate(z_subjektiv_post = z_subjektiv_forståelse - z_post_viden)
 
 # Viz
@@ -203,14 +256,22 @@ df_h4 |>
   geom_col()
 
 # Post knowledge and Subjective understanding
-summary(lm(z_subjektiv_forståelse ~ z_post_viden * treatment, data = df_analysis))
+summary(lm(z_subjektiv_forståelse ~ z_post_viden * treatment, data = df))
 
-df_analysis |>
+# Learning and subjective understanding
+df |>
   ggplot(aes(x = z_subjektiv_forståelse, y = læring_total)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
   theme_minimal() +
   facet_wrap(~treatment)
+
+
+summary(lm(læring_total ~ subjektiv_forståelse + pre_afstand_total, data = df |> filter(treatment == "chat bot")))
+
+summary(lm(læring_total ~ subjektiv_forståelse + pre_afstand_total, data = df |> filter(treatment == "artikel")))
+
+# The relationship between subjective understanding and learning exists for article but not chat bot
 
 # Difference between post-knowledge and subjective understanding
 
@@ -220,7 +281,7 @@ summary(lm(z_subjektiv_post ~ treatment, data = df_h4))
 #### HYPOTESE 5 ####
 
 # Let's look at the political sofistication var - I'm expecting it to be useless
-df_analysis |>
+df |>
   ggplot(aes(x = partier_folketing, y = after_stat(prop), group = 1)) +
   geom_bar() +
   scale_y_continuous(labels = scales::percent) +
