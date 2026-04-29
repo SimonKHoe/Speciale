@@ -86,7 +86,7 @@ df_hyp_2 <- # Left joins max turns back onto OG df
 df <- ### THIS IS THE FILTER DF - ENGAGEMENT V. ENGAGEMENT
   df_hyp_2 |>
   filter(max_turn != 1 | is.na(max_turn)) |>  # Now we can filter out 1-turn chat bot interactions by keeping bigger than 1 or NA (article)
-
+  filter(Q40_time_Page_Submit > 30 | is.na(Q40_time_Page_Submit))
 
   #### ####
 

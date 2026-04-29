@@ -72,23 +72,104 @@ pre_summary <- df_pre_long |>
   )
 
 # Plot
-pre_bar <-
+# pre_bar <-
   ggplot(pre_summary, aes(x = parti |> fct_reorder(desc(mean_afstand)), y = mean_afstand)) +
   geom_col() +
   geom_errorbar(aes(ymin = mean_afstand - 1.96 * se,
                     ymax = mean_afstand + 1.96 * se),
                 width = 0.2) +
   labs(
-    title = "Gennemsnitlig afstand i pre-placeringer pr. parti",
-    x = "Parti",
+#    title = "Gennemsnitlig afstand i pre-placeringer pr. parti",
     y = "Gennemsnitlig afstand til ekspertplacering"
   ) +
   theme_simon(base_size = 14) +
   theme(
     axis.title.x = element_blank(),
-    axis.title.y = element_blank()
+#    axis.title.y = element_blank()
   ) +
   scale_y_continuous(breaks = seq(0, 2.5, by = 0.5), limits = c(0,2.8))
+
+ggplot(pre_summary, aes(x = parti |> fct_reorder(desc(mean_afstand)),
+                        y = mean_afstand)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = mean_afstand - 1.96 * se,
+                    ymax = mean_afstand + 1.96 * se),
+                width = 0.15) +
+  labs(
+    y = "Gennemsnitlig afstand til ekspertplacering"
+  ) +
+  theme_simon(base_size = 14) +
+  theme(
+    axis.title.x = element_blank()
+  ) +
+  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5), limits = c(0, 2.8))
+
+# Export pre bar
+ggsave("pre_bar.pdf",
+       plot = pre_bar,
+       width = 6,
+       height = 6)
+
+# Pre dot
+
+party_order <- pre_summary |>
+  group_by(parti) |>
+  summarise(mean_pre = mean(mean_afstand), .groups = "drop") |>
+  arrange(desc(mean_pre)) |>
+  pull(parti)
+
+df_pre_long <-
+  df |>
+  select(treatment, pre_afstand_DF, pre_afstand_LA, pre_afstand_SF,
+         pre_afstand_RV, pre_afstand_EL, pre_afstand_V) |>
+  pivot_longer(
+    cols = -treatment,
+    names_to = "parti",
+    values_to = "afstand"
+  ) |>
+  mutate(
+    parti = str_remove(parti, "pre_afstand_"),
+    parti = factor(parti, levels = c("DF", "LA", "SF", "RV", "EL", "V")),
+    treatment = as.factor(treatment)
+  )
+
+pre_summary <- df_pre_long |>
+  group_by(treatment, parti) |>
+  summarise(
+    mean_afstand = mean(afstand, na.rm = TRUE),
+    sd_afstand = sd(afstand, na.rm = TRUE),
+    n = sum(!is.na(afstand)),
+    se = sd_afstand / sqrt(n),
+    .groups = "drop"
+  ) |>
+  mutate(parti = factor(parti, levels = party_order))
+
+pd <- position_dodge(width = 0.45)
+
+pre_points <-
+ pre_summary |>
+  ggplot(aes(x = parti, y = mean_afstand, color = treatment, shape = treatment)) +
+  geom_point(size = 2.8, position = pd) +
+  geom_errorbar(aes(ymin = mean_afstand - 1.96 * se,
+                    ymax = mean_afstand + 1.96 * se),
+                width = 0.12,
+                position = pd) +
+  labs(y = "Præ-afstand",
+       shape = "Treatment",
+       color = "Treatment") +
+  theme_simon(base_size = 14) +
+  scale_color_manual(values = c(
+    "chat bot" = "#000000",
+    "artikel"  = "#A3A3A3"
+  )) +
+  scale_shape_manual(values = c(
+    "chat bot" = 17,
+    "artikel"  = 16
+  )) +
+  theme(
+    axis.title.x = element_blank()
+  )
+
 
 
 ## POST PLACERINGER ##
@@ -165,7 +246,8 @@ læring_summary <- df_læring_long |>
     n = sum(!is.na(afstand)),
     se = sd_afstand / sqrt(n),
     .groups = "drop"
-  )
+  ) |>
+  mutate(parti = factor(parti, levels = party_order))
 
 # Plot
 læring_bar <-
@@ -175,7 +257,7 @@ læring_bar <-
                     ymax = mean_afstand + 1.96 * se),
                 width = 0.2) +
   labs(
-    title = "Gennemsnitlig læring pr. parti",
+    title = "Læring pr. parti",
     x = "Parti",
     y = "Gennemsnitlig afstand til ekspertplacering"
   ) +
@@ -187,7 +269,13 @@ læring_bar <-
 
 
 # Patchwork
-(pre_bar + post_bar) / læring_bar
+pre_post_bars <- pre_bar + post_bar
+
+# Export as pdf
+ggsave("pre_post_bars.pdf",
+       plot = pre_post_bars,
+       height = 10,
+       width = 10)
 
 
 # Learning facetted on treatment #
@@ -215,16 +303,85 @@ læring_summary <- df_læring_long |>
     n = sum(!is.na(afstand)),
     se = sd_afstand / sqrt(n),
     .groups = "drop"
-  )
+  ) |>
+  mutate(parti = factor(parti, levels = party_order))
 
 # Plot
-# læring_bar_facet <-
-#   ggplot(læring_summary, aes(x = fct_reorder(parti, mean_afstand, .desc = TRUE),
-#                              y = mean_afstand)) +
-#   geom_col() +
-#   geom_errorbar(aes(ymin = mean_afstand - 1.96 * se,
-#                     ymax = mean_afstand + 1.96 * se),
-#                 width = 0.2) +
+
+# Læring dotwhisker
+
+pd <- position_dodge(width = 0.45)
+
+læring_dotwhisker <-
+  ggplot(
+    læring_summary,
+    aes(
+      x = parti,
+      y = mean_afstand,
+      color = treatment,
+      shape = treatment
+    )
+  ) +
+  geom_point(size = 2.8, position = pd) +
+  geom_errorbar(
+    aes(
+      ymin = mean_afstand - 1.96 * se,
+      ymax = mean_afstand + 1.96 * se
+    ),
+    width = 0.12,
+    position = pd
+  ) +
+  geom_hline(yintercept = 0, alpha = 0.85) +
+  labs(
+#    title = "Læring pr. parti og treatment",
+    x = "Parti",
+    y = "Gennemsnitlig læring",
+    color = "Treatment",
+    shape = "Treatment"
+  ) +
+  theme_simon(base_size = 14) +
+  scale_color_manual(values = c(
+    "chat bot" = "#000000",
+    "artikel"  = "#A3A3A3"
+  )) +
+  scale_shape_manual(values = c(
+    "chat bot" = 17,
+    "artikel"  = 16
+  )) +
+  scale_y_continuous(breaks = seq(-0.4, 1.4, by = 0.2)) +
+  theme(
+    axis.title.x = element_blank(),
+#    axis.title.y = element_blank()
+  )
+
+
+# patchwork pre_placement and learning
+pre_og_læring_patchwork <-
+  pre_points / læring_dotwhisker +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+
+# Export patchwork
+ggsave("pre_og_læring_patch.pdf",
+       plot = pre_og_læring_patchwork,
+       height = 7,
+       width = 7
+)
+
+# Facetted on treatment
+# læring_dotwhisker_facet <-
+#   ggplot(
+#     læring_summary,
+#     aes(x = fct_reorder(parti, mean_afstand, .desc = TRUE),
+#         y = mean_afstand)
+#   ) +
+#   geom_point(size = 2) +
+#   geom_errorbar(
+#     aes(ymin = mean_afstand - 1.96 * se,
+#         ymax = mean_afstand + 1.96 * se),
+#     width = 0.1
+#   ) +
+#   geom_hline(yintercept = 0, alpha = 0.85) +
 #   facet_wrap(~ treatment, axes = "all_y") +
 #   labs(
 #     title = "Gennemsnitlig læring pr. parti og treatment",
@@ -236,34 +393,8 @@ læring_summary <- df_læring_long |>
 #     axis.title.x = element_blank(),
 #     axis.title.y = element_blank(),
 #     panel.spacing = unit(1.5, "cm")
-#   )
-
-#læring_dotwhisker_facet <-
-  ggplot(
-    læring_summary,
-    aes(x = fct_reorder(parti, mean_afstand, .desc = TRUE),
-        y = mean_afstand)
-  ) +
-  geom_point(size = 2) +
-  geom_errorbar(
-    aes(ymin = mean_afstand - 1.96 * se,
-        ymax = mean_afstand + 1.96 * se),
-    width = 0.1
-  ) +
-  geom_hline(yintercept = 0, alpha = 0.95) +
-  facet_wrap(~ treatment, axes = "all_y") +
-  labs(
-    title = "Gennemsnitlig læring pr. parti og treatment",
-    x = "Parti",
-    y = "Gennemsnitlig læring"
-  ) +
-  theme_simon(base_size = 14) +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    panel.spacing = unit(1.5, "cm")
-  ) +
-  scale_y_continuous(breaks = seq(-0.4, 1.4, by = 0.2))
+#   ) +
+#   scale_y_continuous(breaks = seq(-0.4, 1.4, by = 0.2))
 
 
 ### Variable ###

@@ -1,5 +1,5 @@
 ### Created on: 26.04.04 ###
-### Last edited: 26.04.24 ###
+### Last edited: 26.04.29 ###
 
 # Setup
 library(dplyr)
@@ -24,7 +24,7 @@ df_analysis <-
 # Define the df with the failed interactions filtered and manipulation check
 df_failed <-
   df_analysis |>
-  filter(Q8_1 == 0 | is.na(Q8_1)) |>
+#  filter(Q8_1 == 0 | is.na(Q8_1)) |>
 #  filter(partier_folketing == "179")
   filter(Progress > 75)
 
@@ -139,54 +139,122 @@ conversation_table_joined |>
   geom_point() +
   theme_minimal()
 
-# Look at learning distribution for interaction index
-df_hyp_2 |>
-  ggplot(aes(x = interaction_index, y = læring_total)) +
-  geom_point() +
-  theme_minimal()
-
-# Fit a reg line
-df_hyp_2 |>
-  ggplot(aes(x = interaction_index, y = læring_total)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  theme_minimal()
 
 ### Interaction index regression ###
-summary(lm(læring_total ~ interaction_index_chars, data = df_hyp_2))
+summary(lm(læring_total ~ interaction_index, data = df_hyp_2))
 
-### Interaction index regression ###
-summary(lm(læring_total ~ interaction_index_chars + pre_afstand_total, data = df_hyp_2))
+### Interaction index regression pre ###
+summary(lm(læring_total ~ interaction_index + pre_afstand_total, data = df_hyp_2))
 
-### Let's look at nchar ###
-summary(lm(læring_total ~ n_chars + max_turn + conv_time_s, data = df_hyp_2))
+### Interaction index regression with controls
+summary(lm(læring_total ~ interaction_index + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
 
-### Let's look at them z transformed
+### Interaction index regression with controls and n_char control
+summary(lm(læring_total ~ interaction_index + n_chars + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
+
+# Robustness - look at n_chars inside the index
+summary(lm(læring_total ~ interaction_index_chars + n_chars + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
+
+# Plot the main reg
+pred <- ggpredict(
+  lm(læring_total ~ interaction_index + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2),
+  terms = "interaction_index"
+)
+
+ggplot(pred, aes(x = x, y = predicted)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1) +
+  geom_hline(yintercept = 0) +
+  labs(
+    x = "Chat bot interaktion",
+    y = "Forudsagt læring"
+  ) +
+  theme_simon(base_size = 14) +
+  scale_y_continuous(limits = c(-0.8, 0.8)) +
+  scale_x_continuous(limits = c(-3, 1))
+
+
+# Visualize the interaction
+
+# Plot 1
+m_interaction <- lm(
+  læring_total ~ z_chars * interaction_index +
+    pre_afstand_total + Tillid + subjektiv_forståelse,
+  data = df_hyp_2
+)
+
+pred_interaction <- ggpredict(
+  m_interaction,
+  terms = c("interaction_index", "z_chars [-1, 0, 1]")
+)
+
+ggplot(pred_interaction,
+       aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+              alpha = 0.05, color = NA) +
+  geom_hline(yintercept = 0, alpha = 0.7) +
+  labs(
+    x = "Chat bot interaktion",
+    y = "Forudsagt læring",
+    color = "Tekstmængde",
+    fill = "Tekstmængde"
+  ) +
+  scale_color_discrete(
+    labels = c("Lav tekstmængde (-1 SD)", "Gennemsnitlig tekstmængde", "Høj tekstmængde (+1 SD)")
+  ) +
+  scale_fill_discrete(
+    labels = c("Lav tekstmængde (-1 SD)", "Gennemsnitlig tekstmængde", "Høj tekstmængde (+1 SD)")
+  ) +
+  theme_simon(base_size = 14)
+
+# Plot 2
+m_interaction <- lm(
+  læring_total ~ z_chars * interaction_index +
+    pre_afstand_total + Tillid + subjektiv_forståelse,
+  data = df_hyp_2
+)
+
+pred_interaction <- ggpredict(
+  m_interaction,
+  terms = c("z_chars", "interaction_index [-1, 0, 1]")
+)
+
+ggplot(pred_interaction,
+       aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+              alpha = 0.15, color = NA) +
+  geom_hline(yintercept = 0, alpha = 0.7) +
+  labs(
+    x = "Tekstmængde (standardiseret)",
+    y = "Forudsagt læring",
+    color = "Interaktion",
+    fill = "Interaktion"
+  ) +
+  scale_color_discrete(
+    labels = c("Lav interaktion (-1 SD)", "Gennemsnitlig interaktion", "Høj interaktion (+1 SD)")
+  ) +
+  scale_fill_discrete(
+    labels = c("Lav interaktion (-1 SD)", "Gennemsnitlig interaktion", "Høj interaktion (+1 SD)")
+  ) +
+  theme_simon(base_size = 14)
+
+# How do the behavorial items interact? #
+
+
+### Let's look at items z transformed
 summary(lm(læring_total ~ z_chars + z_rounds + z_time, data = df_hyp_2))
 
-### Let's look at z_chars
-summary(lm(læring_total ~ z_chars, data = df_hyp_2))
+# z_chars looks like more chars - more learning
 
-### Interaction - z_chars only works with the attention index
-summary(lm(læring_total ~ z_chars * interaction_index + pre_afstand_total, data = df_hyp_2 ))
-
-### Double interaction
-summary(lm(læring_total ~ z_chars * z_time * z_rounds + pre_afstand_total, data = df_hyp_2))
-
-### Trust added
-summary(lm(læring_total ~ interaction_index_chars + pre_afstand_total + Tillid, data = df_hyp_2 |> filter(after_cutoff == "after")))
-
-### Interaction - z_chars only works with the attention index
-summary(lm(læring_total ~ z_chars * interaction_index + pre_afstand_total + Tillid, data = df_hyp_2))
-
-### Subjective understanding added
-summary(lm(læring_total ~ interaction_index_chars + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
-
-### Interaction - z_chars only works with the attention index
+### Interaction - z_chars with the attention index and controls
 summary(lm(læring_total ~ z_chars * interaction_index + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
 
-### Pre-knowledge relationship with interaction index
-summary(lm(interaction_index ~ pre_afstand_total, data = df_hyp_2))
+# Visualize the interaction
+
+
+
 
 
 
@@ -213,6 +281,8 @@ average_chars_num <-
   df_hyp_2 |>
   filter(treatment == "chat bot") |>
   summarise(average_chars_num = mean(n_chars, na.rm = TRUE))
+
+
 
 
 ## Histograms ##

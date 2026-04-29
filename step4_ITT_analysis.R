@@ -156,16 +156,23 @@ p_pred <-
   geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.08) +
   geom_hline(yintercept = 0, alpha = 0.8) +
   scale_x_discrete(labels = labels_vec) +
-  theme_tufte(base_size = 14) +
-  labs(title = "Forudsagt læring for de to treatmenttyper") +
+  theme_simon(base_size = 14) +
+  labs(
+       # title = "Forudsagt læring for de to treatmenttyper, kontrolleret for præ-placeringer",
+       y = "Forudsagt læring") +
   theme(
-    axis.title.y = element_blank(),
+#    axis.title.y = element_blank(),
     axis.ticks.x = element_blank(),
     axis.title.x = element_blank(),
     title = element_text(hjust = 0.5)
   )
 
 p_pred
+
+ggsave("h1_læring_plot.pdf",
+       plot = p_pred,
+       width = 6, height = 6)
+
 
 ## Robustness ##
 
