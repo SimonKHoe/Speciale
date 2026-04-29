@@ -344,7 +344,15 @@ df |>
   scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 10))
 
 # Chat bot issues #
-df_long_cb <- df |>
+
+# Grab labels
+var_labels <- sapply(
+  df |> select(starts_with("Q8_")),
+  function(x) str_replace(var_label(x), "^.*Selected Choice\\s*-?\\s*:?\\s*", "")
+)
+
+# Pivot multi selects
+df_plot <- df |>
   select(-Q8_5_TEXT) |>
   select(starts_with("Q8_")) |>
   pivot_longer(
@@ -352,7 +360,54 @@ df_long_cb <- df |>
     names_to = "option",
     values_to = "selected"
   ) |>
-  filter(!is.na(selected))
+  filter(!is.na(selected)) |>
+  filter(selected == 1) |>
+  count(option) |>
+  mutate(number = n)
+
+# Readd labels
+
+df_long_cb <- df_plot |>
+  mutate(option_label = var_labels[option])
+
+# Plot
+df_long_cb |>
+  ggplot(aes(x = reorder(option_label, -number), y = number)) +
+  geom_col() +
+  theme_simon(base_size = 14) +
+  scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 10)) +
+  theme(axis.title.x = element_blank()) +
+  labs(title = "Fordelingen af rapporterede problemer med chat botten")
+
+# Visualize the text answers
+df_quotes <- df |>
+  filter(!is.na(Q8_5_TEXT), Q8_5_TEXT != "") |>
+  mutate(
+    id = row_number() * 3,
+    quote = str_wrap(paste0("“", Q8_5_TEXT, "”"), width = 100)
+  )
+
+ggplot(df_quotes, aes(x = 1, y = id, label = quote)) +
+  geom_text(hjust = 0, size = 3.5, lineheight = 1.1) +
+  xlim(1, 5) +
+  theme_void()
+
+# Time spent on article #
+df |>
+  ggplot(aes(x = Q40_time_Page_Submit)) +
+  geom_histogram(
+                 binwidth = 30, alpha = 0.4) +
+  labs(
+    title = "Fordelingen i tid brugt på artiklen, sekunder",
+    y = "Frekvens (absolutte tal)"
+  ) +
+  theme_simon(base_size = 14) +
+  theme(
+    axis.title.x = element_blank(),
+    panel.spacing = unit(1.5, "cm")
+  ) +
+  scale_x_continuous(breaks = seq(0, 600, by = 30))
+
 
 
 ## BOXPLOT TREATMENTS ##

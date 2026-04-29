@@ -1,5 +1,5 @@
 ### Created on: 26.04.04 ###
-### Last edited: 26.04.28 ###
+### Last edited: 26.04.29 ###
 
 # Setup
 library(dplyr)
@@ -39,7 +39,7 @@ df <- df_cutoff_filtered
 # df <- df_failed
 
 
-# THIS DEFINES THE ATE DF
+# THIS DEFINES THE FILTERED/LATE DF
 
 ### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS ### TODO: STREAMLINE
 # Create a table in long format for each round of conversations
@@ -85,7 +85,8 @@ df_hyp_2 <- # Left joins max turns back onto OG df
 # Turn df_hyp_2 (joined max_turns) into the new df
 df <- ### THIS IS THE ATE DF
   df_hyp_2 |>
-  filter(max_turn != 1 | is.na(max_turn)) # Now we can filter out 1-turn chat bot interactions by keeping bigger than 1 or NA (article)
+  filter(max_turn != 1 | is.na(max_turn)) |>  # Now we can filter out 1-turn chat bot interactions by keeping bigger than 1 or NA (article)
+
 
 #### ####
 
@@ -204,8 +205,6 @@ summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df |> filter(treat
 summary(lm(læring_total ~ Tillid * treatment + pre_afstand_total, data = df))
 # We lack power for the interaction - but could also be that it isn't there
 
-
-## Robustness ##
 
 # ANCOVA Robustness
 summary(lm(post_afstand_total ~ treatment + Tillid + pre_afstand_total, data = df))
