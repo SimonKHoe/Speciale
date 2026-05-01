@@ -251,11 +251,61 @@ summary(lm(læring_total ~ z_chars + z_rounds + z_time, data = df_hyp_2))
 ### Interaction - z_chars with the attention index and controls
 summary(lm(læring_total ~ z_chars * interaction_index + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
 
+## What happens if we test the "good user" archetype?
+summary(lm(læring_total ~ z_chars + z_rounds + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
+
+## Interact them
+good_user_interaction <- lm(læring_total ~ z_chars * z_rounds + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2)
+
 # Visualize the interaction
 
+# Lets visualize the good user interaction
+pred_interaction <- ggpredict(
+  good_user_interaction,
+  terms = c("z_chars", "z_rounds [-1, 0, 1]")
+)
+
+ggplot(pred_interaction,
+       aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+              alpha = 0.15, color = NA) +
+  geom_hline(yintercept = 0, alpha = 0.7) +
+  labs(
+    x = "z_chars",
+    y = "Forudsagt læring",
+    color = "Interaktion",
+    fill = "Interaktion"
+  ) +
+  scale_color_discrete(
+    labels = c("Lavt antal runder (-1 SD)", "Gennemsnitlig antal runder", "Højt antal runder (+1 SD)")
+  ) +
+  scale_fill_discrete(
+    labels = c("Lavt antal runder (-1 SD)", "Gennemsnitlig antal runder", "Højt antal runder (+1 SD)")
+  ) +
+  theme_simon(base_size = 14)
 
 
+# split til to grupper - dem med one shot-interaktioner, og dem uden
+df_hyp_2 <-
+  df_hyp_2 |>
+  mutate(one_shot = case_when(
+    is.na(max_turn) ~ "artikelbruger",
+    max_turn <= 2 ~ "ingen skud",
+    max_turn == 3 ~ "et skud",
+    max_turn > 3 ~ "flere skud"
+  ))
 
+
+## Regressioner med de nye brugertyper
+# Effekten af one_shot variablen
+summary(lm(læring_total ~ one_shot + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2 |> filter(one_shot != "artikelbruger")))
+
+# One_shot kombineret med z_chars
+summary(lm(læring_total ~ one_shot + z_chars + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2 |> filter(one_shot != "artikelbruger")))
+
+# Interaktion med z_chars
+summary(lm(læring_total ~ one_shot * z_chars + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2 |> filter(one_shot != "artikelbruger")))
 
 
 #### Classifications ####
@@ -281,6 +331,10 @@ average_chars_num <-
   df_hyp_2 |>
   filter(treatment == "chat bot") |>
   summarise(average_chars_num = mean(n_chars, na.rm = TRUE))
+
+
+
+
 
 
 
