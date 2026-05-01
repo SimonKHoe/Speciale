@@ -131,14 +131,15 @@ df_hyp_2 <-
 
 
 # Look at learning distribution for the amount of turns used
-conversation_table_joined |>
-  group_by(conv_id) |>
-  slice_max(turn_order, n = 1) |>
-  ungroup() |>
-  ggplot(aes(x = turn_order, y = læring_total)) +
-  geom_point() +
-  theme_minimal()
+# conversation_table_joined |>
+#   group_by(conv_id) |>
+#   slice_max(turn_order, n = 1) |>
+#   ungroup() |>
+#   ggplot(aes(x = turn_order, y = læring_total)) +
+#   geom_point() +
+#   theme_minimal()
 
+# Interaction X Learning #
 
 ### Interaction index regression ###
 summary(lm(læring_total ~ interaction_index, data = df_hyp_2))
@@ -155,7 +156,7 @@ summary(lm(læring_total ~ interaction_index + n_chars + pre_afstand_total + Til
 # Robustness - look at n_chars inside the index
 summary(lm(læring_total ~ interaction_index_chars + n_chars + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
 
-# Plot the main reg
+# Plot the interaction index binary
 pred <- ggpredict(
   lm(læring_total ~ interaction_index + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2),
   terms = "interaction_index"
@@ -166,82 +167,14 @@ ggplot(pred, aes(x = x, y = predicted)) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1) +
   geom_hline(yintercept = 0) +
   labs(
-    x = "Chat bot interaktion",
+    x = "Chat bot interaktion (normaliseret)",
     y = "Forudsagt læring"
   ) +
   theme_simon(base_size = 14) +
-  scale_y_continuous(limits = c(-0.8, 0.8)) +
-  scale_x_continuous(limits = c(-3, 1))
+  scale_y_continuous(limits = c(-0.8, 0.8))
 
-
-# Visualize the interaction
-
-# Plot 1
-m_interaction <- lm(
-  læring_total ~ z_chars * interaction_index +
-    pre_afstand_total + Tillid + subjektiv_forståelse,
-  data = df_hyp_2
-)
-
-pred_interaction <- ggpredict(
-  m_interaction,
-  terms = c("interaction_index", "z_chars [-1, 0, 1]")
-)
-
-ggplot(pred_interaction,
-       aes(x = x, y = predicted, color = group, fill = group)) +
-  geom_line(linewidth = 1) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
-              alpha = 0.05, color = NA) +
-  geom_hline(yintercept = 0, alpha = 0.7) +
-  labs(
-    x = "Chat bot interaktion",
-    y = "Forudsagt læring",
-    color = "Tekstmængde",
-    fill = "Tekstmængde"
-  ) +
-  scale_color_discrete(
-    labels = c("Lav tekstmængde (-1 SD)", "Gennemsnitlig tekstmængde", "Høj tekstmængde (+1 SD)")
-  ) +
-  scale_fill_discrete(
-    labels = c("Lav tekstmængde (-1 SD)", "Gennemsnitlig tekstmængde", "Høj tekstmængde (+1 SD)")
-  ) +
-  theme_simon(base_size = 14)
-
-# Plot 2
-m_interaction <- lm(
-  læring_total ~ z_chars * interaction_index +
-    pre_afstand_total + Tillid + subjektiv_forståelse,
-  data = df_hyp_2
-)
-
-pred_interaction <- ggpredict(
-  m_interaction,
-  terms = c("z_chars", "interaction_index [-1, 0, 1]")
-)
-
-ggplot(pred_interaction,
-       aes(x = x, y = predicted, color = group, fill = group)) +
-  geom_line(linewidth = 1) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
-              alpha = 0.15, color = NA) +
-  geom_hline(yintercept = 0, alpha = 0.7) +
-  labs(
-    x = "Tekstmængde (standardiseret)",
-    y = "Forudsagt læring",
-    color = "Interaktion",
-    fill = "Interaktion"
-  ) +
-  scale_color_discrete(
-    labels = c("Lav interaktion (-1 SD)", "Gennemsnitlig interaktion", "Høj interaktion (+1 SD)")
-  ) +
-  scale_fill_discrete(
-    labels = c("Lav interaktion (-1 SD)", "Gennemsnitlig interaktion", "Høj interaktion (+1 SD)")
-  ) +
-  theme_simon(base_size = 14)
-
+### BEHAVIORIAL REGRESSIONS ###
 # How do the behavorial items interact? #
-
 
 ### Let's look at items z transformed
 summary(lm(læring_total ~ z_chars + z_rounds + z_time, data = df_hyp_2))
@@ -257,33 +190,116 @@ summary(lm(læring_total ~ z_chars + z_rounds + pre_afstand_total + Tillid + sub
 ## Interact them
 good_user_interaction <- lm(læring_total ~ z_chars * z_rounds + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2)
 
-# Visualize the interaction
 
-# Lets visualize the good user interaction
-pred_interaction <- ggpredict(
-  good_user_interaction,
-  terms = c("z_chars", "z_rounds [-1, 0, 1]")
+
+
+# Visualize the interactions #
+
+# Plot 1
+m_interaction <- lm(
+  læring_total ~ z_chars * interaction_index +
+    pre_afstand_total + Tillid + subjektiv_forståelse,
+  data = df_hyp_2
 )
 
-ggplot(pred_interaction,
+pred_interaction <- ggpredict(
+  m_interaction,
+  terms = c("interaction_index", "z_chars [-1, 0, 1]")
+)
+
+h2_interaktion_tekst.pdf <-
+  ggplot(pred_interaction,
        aes(x = x, y = predicted, color = group, fill = group)) +
   geom_line(linewidth = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
-              alpha = 0.15, color = NA) +
-  geom_hline(yintercept = 0, alpha = 0.7) +
+              alpha = 0.04, color = NA) +
+  geom_segment(aes(y = 0, xend = 2), colour = "black", alpha = 0.7) +
   labs(
-    x = "z_chars",
+    x = "Chat bot interaktionsniveau (normaliseret)",
     y = "Forudsagt læring",
-    color = "Interaktion",
-    fill = "Interaktion"
+    color = str_wrap("Informationsmængde (standardiseret)", width = 15),
+    fill = str_wrap("Informationsmængde (standardiseret)", width = 15),
+    caption = str_wrap("Note: Forudsagte værdier baseret på lineær regression med 95% konfidensintervaller, og kontrol for tillid og subjektiv forståelse.", width = 45), hjust = 0.5
   ) +
-  scale_color_discrete(
-    labels = c("Lavt antal runder (-1 SD)", "Gennemsnitlig antal runder", "Højt antal runder (+1 SD)")
+  scale_color_manual(
+    values = c("#D55E00", "#009E73", "#0072B2"),
+    labels = c("Lav (-1 SD)", "Gennemsnitlig", "Høj (+1 SD)")
   ) +
-  scale_fill_discrete(
-    labels = c("Lavt antal runder (-1 SD)", "Gennemsnitlig antal runder", "Højt antal runder (+1 SD)")
+  scale_fill_manual(
+    values = c("#D55E00", "#009E73", "#0072B2"),
+    labels = c("Lav (-1 SD)", "Gennemsnitlig", "Høj (+1 SD)")
   ) +
-  theme_simon(base_size = 14)
+  theme_simon(base_size = 12, caption_size = 10) +
+  theme(
+    plot.caption = element_text(margin = margin(t = 25)),
+    legend.position = "bottom"
+  )
+
+ggsave("h2_interation_tekst.pdf",
+       plot = h2_interaktion_tekst.pdf,
+       width = 6,
+       height = 6)
+
+# Plot 2
+# m_interaction <- lm(
+#   læring_total ~ z_chars * interaction_index +
+#     pre_afstand_total + Tillid + subjektiv_forståelse,
+#   data = df_hyp_2
+# )
+#
+# pred_interaction <- ggpredict(
+#   m_interaction,
+#   terms = c("z_chars", "interaction_index [-1, 0, 1]")
+# )
+#
+# ggplot(pred_interaction,
+#        aes(x = x, y = predicted, color = group, fill = group)) +
+#   geom_line(linewidth = 1) +
+#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+#               alpha = 0.15, color = NA) +
+#   geom_hline(yintercept = 0, alpha = 0.7) +
+#   labs(
+#     x = "Tekstmængde (standardiseret)",
+#     y = "Forudsagt læring",
+#     color = "Interaktion",
+#     fill = "Interaktion"
+#   ) +
+#   scale_color_discrete(
+#     labels = c("Lav interaktion (-1 SD)", "Gennemsnitlig interaktion", "Høj interaktion (+1 SD)")
+#   ) +
+#   scale_fill_discrete(
+#     labels = c("Lav interaktion (-1 SD)", "Gennemsnitlig interaktion", "Høj interaktion (+1 SD)")
+#   ) +
+#   theme_simon(base_size = 14)
+
+
+# Visualize the interaction
+
+# # Lets visualize the good user interaction
+# pred_interaction <- ggpredict(
+#   good_user_interaction,
+#   terms = c("z_chars", "z_rounds [-1, 0, 1]")
+# )
+#
+# ggplot(pred_interaction,
+#        aes(x = x, y = predicted, color = group, fill = group)) +
+#   geom_line(linewidth = 1) +
+#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+#               alpha = 0.15, color = NA) +
+#   geom_hline(yintercept = 0, alpha = 0.7) +
+#   labs(
+#     x = "z_chars",
+#     y = "Forudsagt læring",
+#     color = "Runder",
+#     fill = "Runder"
+#   ) +
+#   scale_color_discrete(
+#     labels = c("Lavt antal runder (-1 SD)", "Gennemsnitlig antal runder", "Højt antal runder (+1 SD)")
+#   ) +
+#   scale_fill_discrete(
+#     labels = c("Lavt antal runder (-1 SD)", "Gennemsnitlig antal runder", "Højt antal runder (+1 SD)")
+#   ) +
+#   theme_simon(base_size = 14)
 
 
 # split til to grupper - dem med one shot-interaktioner, og dem uden
@@ -291,9 +307,9 @@ df_hyp_2 <-
   df_hyp_2 |>
   mutate(one_shot = case_when(
     is.na(max_turn) ~ "artikelbruger",
-    max_turn <= 2 ~ "ingen skud",
-    max_turn == 3 ~ "et skud",
-    max_turn > 3 ~ "flere skud"
+    max_turn <= 2 ~ "ingen brugerforespørgsel",
+    max_turn == 3 ~ "én brugerforespørgsel",
+    max_turn > 3 ~ "flere brugerforespørgsler"
   ))
 
 
@@ -306,6 +322,70 @@ summary(lm(læring_total ~ one_shot + z_chars + pre_afstand_total + Tillid + sub
 
 # Interaktion med z_chars
 summary(lm(læring_total ~ one_shot * z_chars + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2 |> filter(one_shot != "artikelbruger")))
+
+# Visualize the one shot reg
+# One-shot model
+one_shot_reg <- lm(
+  læring_total ~ one_shot + z_chars + pre_afstand_total + Tillid + subjektiv_forståelse,
+  data = df_hyp_2 |> filter(one_shot != "artikelbruger")
+)
+
+# Count n observations pr. one_shot category
+n_df_one_shot <- df_hyp_2 |>
+  filter(one_shot != "artikelbruger") |>
+  group_by(one_shot) |>
+  summarise(n = n(), .groups = "drop")
+
+# Marginal means plot data
+newdata_one_shot <- data.frame(
+  one_shot = c("ingen brugerforespørgsel", "én brugerforespørgsel", "flere brugerforespørgsler"),
+  z_chars = mean(df_hyp_2$z_chars, na.rm = TRUE),
+  pre_afstand_total = mean(df_hyp_2$pre_afstand_total, na.rm = TRUE),
+  Tillid = mean(df_hyp_2$Tillid, na.rm = TRUE),
+  subjektiv_forståelse = mean(df_hyp_2$subjektiv_forståelse, na.rm = TRUE)
+)
+
+# Make sure factor/order matches plot order
+newdata_one_shot <- newdata_one_shot |>
+  mutate(one_shot = factor(one_shot, levels = c("ingen brugerforespørgsel", "én brugerforespørgsel", "flere brugerforespørgsler")))
+
+n_df_one_shot <- n_df_one_shot |>
+  mutate(one_shot = factor(one_shot, levels = c("ingen brugerforespørgsel", "én brugerforespørgsel", "flere brugerforespørgsler")))
+
+pred_one_shot <- predict(one_shot_reg, newdata = newdata_one_shot, interval = "confidence")
+
+pred_df_one_shot <- bind_cols(newdata_one_shot, as.data.frame(pred_one_shot)) |>
+  left_join(n_df_one_shot, by = "one_shot")
+
+labels_vec_one_shot <- setNames(
+  paste0(pred_df_one_shot$one_shot, "\n(n = ", pred_df_one_shot$n, ")"),
+  pred_df_one_shot$one_shot
+)
+
+p_one_shot <-
+  ggplot(pred_df_one_shot, aes(x = one_shot, y = fit)) +
+  geom_point(size = 2.5) +
+  geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.08) +
+  geom_hline(yintercept = 0, alpha = 0.8) +
+  scale_x_discrete(labels = labels_vec_one_shot) +
+  theme_simon(base_size = 14, caption_size = 11) +
+  labs(
+    y = "Forudsagt læring"
+  ) +
+  theme(
+    axis.ticks.x = element_blank(),
+    axis.title.x = element_blank(),
+    title = element_text(hjust = 0.5)
+  )
+
+p_one_shot
+
+ggsave("h2_one_shot.pdf",
+       plot = p_one_shot,
+       width = 6,
+       height = 6
+)
+
 
 
 #### Classifications ####

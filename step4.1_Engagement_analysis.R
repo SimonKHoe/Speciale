@@ -234,14 +234,55 @@ summary(lm(post_viden ~ subjektiv_forståelse * treatment, data = df))
 
 summary(lm(læring_total ~ subjektiv_forståelse, data = df |> filter(treatment == "artikel")))
 
-# Visualize the correlation facetted
-df |>
-  ggplot(aes(y = post_viden, x = subjektiv_forståelse, groups = treatment)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = TRUE) +
-  theme_tufte(base_size = 14) +
-  facet_wrap(~treatment, scales = "free_x")
+# PLot the interaction
+# Plot the interaction
 
+model_h4 <- lm(post_viden ~ subjektiv_forståelse * treatment, data = df)
+
+pred_interaction_h4 <- ggpredict(
+  model_h4,
+  terms = c("subjektiv_forståelse [all]", "treatment")
+)
+
+#h4_interaktion_tekst.pdf <-
+ggplot(pred_interaction_h4,
+       aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+              alpha = 0.04, color = NA) +
+  labs(
+    x = "Subjektiv forståelse (standardiseret)",
+    y = "Forudsagt post-viden",
+    color = "Informationskilde",
+    fill = "Informationskilde",
+    caption = str_wrap(
+      "Note: Forudsagte værdier baseret på lineær regression med 95% konfidensintervaller.",
+      width = 45
+    )
+  ) +
+  scale_color_manual(
+    values = c("#0072B2", "#D55E00"),
+    labels = c("Artikel", "Chat bot")
+  ) +
+  scale_fill_manual(
+    values = c("#0072B2", "#D55E00"),
+    labels = c("Artikel", "Chat bot")
+  ) +
+  theme_simon(base_size = 12, caption_size = 10) +
+  theme(
+    plot.caption = element_text(margin = margin(t = 25)),
+    legend.position = "bottom"
+  )
+
+
+# # Visualize the correlation facetted
+# df |>
+#   ggplot(aes(y = post_viden, x = subjektiv_forståelse, groups = treatment)) +
+#   geom_point() +
+#   geom_smooth(method = "lm", se = TRUE) +
+#   theme_tufte(base_size = 14) +
+#   facet_wrap(~treatment, scales = "free_x")
+#
 
 
 # Exploration

@@ -72,7 +72,7 @@ pre_summary <- df_pre_long |>
   )
 
 # Plot
-# pre_bar <-
+ pre_bar <-
   ggplot(pre_summary, aes(x = parti |> fct_reorder(desc(mean_afstand)), y = mean_afstand)) +
   geom_col() +
   geom_errorbar(aes(ymin = mean_afstand - 1.96 * se,
@@ -104,11 +104,11 @@ ggplot(pre_summary, aes(x = parti |> fct_reorder(desc(mean_afstand)),
   ) +
   scale_y_continuous(breaks = seq(0, 2.5, by = 0.5), limits = c(0, 2.8))
 
-# Export pre bar
-ggsave("pre_bar.pdf",
-       plot = pre_bar,
-       width = 6,
-       height = 6)
+# # Export pre bar
+# ggsave("pre_bar.pdf",
+#        plot = pre_bar,
+#        width = 6,
+#        height = 6)
 
 # Pre dot
 
@@ -364,8 +364,8 @@ pre_og_læring_patchwork <-
 # Export patchwork
 ggsave("pre_og_læring_patch.pdf",
        plot = pre_og_læring_patchwork,
-       height = 7,
-       width = 7
+       height = 6,
+       width = 6
 )
 
 # Facetted on treatment

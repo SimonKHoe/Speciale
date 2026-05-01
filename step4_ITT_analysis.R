@@ -14,6 +14,7 @@ library(tidyr)
 library(dotwhisker)
 library(ggeffects)
 library(ggthemes)
+library(emmeans)
 
 #### Load data ####
 df_analysis <-
@@ -213,6 +214,9 @@ summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df |> filter(treat
 
 # Interaktion
 summary(lm(læring_total ~ Tillid * treatment + pre_afstand_total, data = df))
+
+
+summary(lm(læring_total ~ treatment + pre_afstand_total, data = df |> filter(Tillid > 4)))
 # We lack power for the interaction - but could also be that it isn't there
 
 
@@ -238,19 +242,103 @@ summary(lm(post_viden ~ subjektiv_forståelse, data = df |> filter(treatment == 
 
 summary(lm(post_viden ~ subjektiv_forståelse, data = df |> filter(treatment == "artikel")))
 
-# The relationship is stronger for the article but is positive and significant in both
-
+# The relationship is stronger for the article but is positive and significant in both - try interaction
 summary(lm(post_viden ~ subjektiv_forståelse * treatment, data = df))
 
-summary(lm(læring_total ~ subjektiv_forståelse, data = df |> filter(treatment == "artikel")))
+# Plot the interaction
 
-# Visualize the correlation facetted
-df |>
-  ggplot(aes(y = post_viden, x = subjektiv_forståelse, groups = treatment)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = TRUE) +
-  theme_tufte(base_size = 14) +
-  facet_wrap(~treatment, scales = "free_x")
+model_h4 <- lm(post_viden ~ subjektiv_forståelse * treatment, data = df)
+
+pred_interaction_h4 <- ggpredict(
+  model_h4,
+  terms = c("subjektiv_forståelse [all]", "treatment")
+)
+
+h4_interaktion <-
+  ggplot(pred_interaction_h4,
+         aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+              alpha = 0.04, color = NA) +
+  geom_hline(
+    yintercept = mean(df$post_viden, na.rm = TRUE),
+    linetype = "dashed",
+    colour = "black",
+    alpha = 0.4
+  ) +
+  labs(
+    x = "Subjektiv forståelse",
+    y = "Forudsagt post-viden (ud fra afstand)",
+    color = "Informationskilde",
+    fill = "Informationskilde",
+    caption = str_wrap(
+      "Note: Forudsagte værdier baseret på lineær regression med 95% konfidensintervaller.",
+      width = 45
+    )
+  ) +
+  scale_color_manual(
+    values = c("#0072B2", "#D55E00"),
+    labels = c("Artikel", "Chat bot")
+  ) +
+  scale_fill_manual(
+    values = c("#0072B2", "#D55E00"),
+    labels = c("Artikel", "Chat bot")
+  ) +
+  theme_simon(base_size = 14, caption_size = 11) +
+  theme(
+    plot.caption = element_text(margin = margin(t = 25)),
+    legend.position = "bottom"
+  )
+
+# Export the interaction plot
+ggsave("h4_interaktion.pdf",
+       plot = h4_interaktion.pdf,
+       width = 6,
+       height = 6
+       )
+
+
+# Marginal difference plot
+# vælg punkter langs x
+em <- emmeans(
+  model_h4,
+  ~ treatment | subjektiv_forståelse,
+  at = list(subjektiv_forståelse = seq(1, 5, by = 0.5))
+)
+
+# forskel mellem chatbot og artikel
+diffs <- contrast(em, method = "revpairwise")
+
+summary(diffs)
+
+
+diffs_df <- as.data.frame(summary(diffs, infer = TRUE))
+names(diffs_df)
+
+ggplot(diffs_df, aes(x = subjektiv_forståelse, y = estimate)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = 0.1) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(
+    x = "Subjektiv forståelse",
+    y = "Forskel (Chatbot - Artikel)",
+    title = "Marginal forskel mellem treatments"
+  ) +
+  theme_minimal()
+
+
+# Do chat bot users overestimate theselves?
+df$overconfidence <- scale(df$subjektiv_forståelse) - scale(df$post_viden)
+
+summary(lm(overconfidence ~ treatment, data = df))
+
+# # Visualize the correlation facetted
+# df |>
+#   ggplot(aes(y = post_viden, x = subjektiv_forståelse, groups = treatment)) +
+#   geom_point() +
+#   geom_smooth(method = "lm", se = TRUE) +
+#   theme_tufte(base_size = 14) +
+#   facet_wrap(~treatment, scales = "free_x")
 
 
 

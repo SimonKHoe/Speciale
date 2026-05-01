@@ -16,7 +16,7 @@ library(ggeffects)
 
 # Define my own ggplot theme
 
-theme_simon <- function(base_size = 14, ticks = TRUE) {
+theme_simon <- function(base_size = 14, caption_size = 12, ticks = TRUE) {
   theme_tufte(base_size = base_size, ticks = ticks) +
     theme(
       # Sæt ALT tekst til sort
@@ -27,7 +27,7 @@ theme_simon <- function(base_size = 14, ticks = TRUE) {
       axis.title  = element_text(color = "black"),
       plot.title  = element_text(color = "black"),
       plot.subtitle = element_text(color = "black"),
-      plot.caption = element_text(color = "black"),
+      plot.caption = element_text(color = "black", size = caption_size),
       strip.text  = element_text(color = "black"),
       legend.text = element_text(color = "black"),
       legend.title = element_text(color = "black"),
