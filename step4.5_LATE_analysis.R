@@ -15,6 +15,7 @@ library(dotwhisker)
 library(ggeffects)
 library(ggthemes)
 library(AER)
+library(broom)
 
 #### Load data ####
 df_analysis <-
@@ -94,4 +95,113 @@ summary(first_stage)
 iv_model <- ivreg(læring_total ~ engaged_chatbot_dummy + pre_afstand_total | treatment_dummy + pre_afstand_total, data = df_late)
 
 summary(iv_model, diagnostics = TRUE)
+
+
+### PLOT WITH ITT ###
+#### HYPOTHESIS 1 ####
+# Test whether the two treatments actually taught them something statistically different from 0
+df_article <- # Filtered to the article for t-test
+  df |>
+  filter(treatment == "artikel")
+
+df_chat_bot <-
+  df |>
+  filter(treatment == "chat bot")
+
+## Article ##
+
+# Test whether mean leraning is statistically differenct from 0
+t.test(df_article$læring_total) # two sided t-test
+
+## Chat bot ##
+t.test(df_chat_bot$læring_total) # two sided t-test
+
+# Two item t-test
+t.test(læring_total ~ treatment, data = df)
+
+# Bivariate
+summary(lm(læring_total ~ treatment, data = df))
+
+# Pre-learning control
+pre_learning_reg <- lm(læring_total ~ treatment + pre_afstand_total, data = df)
+summary(pre_learning_reg)
+
+
+# ANCOVA Robustness
+summary(lm(post_afstand_total ~ treatment + pre_afstand_total, data = df))
+
+# Mean sensecheck - descriptive statistics
+mean(df_chat_bot$pre_afstand_total)
+mean(df_article$pre_afstand_total)
+
+## Plot and regression pipe ##
+
+# Count n observations pr. treatment in the df
+n_df <- df |>
+  group_by(treatment) |>
+  summarise(n = n(), .groups = "drop")
+
+# Marginal means plot
+newdata_2 <- data.frame(
+  treatment = c("artikel", "chat bot"),
+  pre_afstand_total = mean(df$pre_afstand_total, na.rm = TRUE)
+)
+
+pred <- predict(pre_learning_reg, newdata = newdata_2, interval = "confidence")
+
+pred_df <- bind_cols(newdata_2, as.data.frame(pred)) |>
+  left_join(n_df, by = "treatment") # Join the n's onto the plot df
+
+
+labels_vec <- setNames(
+  paste0(pred_df$treatment, "\n(n = ", pred_df$n, ")"),
+  pred_df$treatment
+)
+
+p_pred <-
+  ggplot(pred_df, aes(x = treatment, y = fit)) +
+  geom_point(size = 2.5) +
+  geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.08) +
+  geom_hline(yintercept = 0, alpha = 0.8) +
+  scale_x_discrete(labels = labels_vec) +
+  theme_simon(base_size = 14) +
+  labs(
+    # title = "Forudsagt læring for de to treatmenttyper, kontrolleret for præ-placeringer",
+    y = "Forudsagt læring") +
+  theme(
+    #    axis.title.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.x = element_blank(),
+    title = element_text(hjust = 0.5)
+  )
+
+p_pred
+
+# Extract estimates
+# ITT (ANCOVA / pre_learning_reg)
+itt_est <- tidy(pre_learning_reg) |>
+  filter(term == "treatmentchat bot") |>
+  mutate(model = "ITT")
+
+# LATE (IV)
+late_est <- tidy(iv_model) |>
+  filter(term == "engaged_chatbot_dummy") |>
+  mutate(model = "LATE")
+
+plot_df <- bind_rows(itt_est, late_est)
+
+# Plot them together
+
+ggplot(plot_df, aes(x = model, y = estimate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = estimate - 1.96*std.error,
+                    ymax = estimate + 1.96*std.error),
+                width = 0.1) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_simon(base_size = 14) +
+  labs(
+    x = "",
+    y = "Effekt på læring"
+  )
+
 
