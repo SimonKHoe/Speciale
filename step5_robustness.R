@@ -21,10 +21,11 @@ df_analysis <-
 
 
 # Define the df with the failed interactions filtered and manipulation check
-df_failed <-
+df_failed <- # THis becomes ITT
   df_analysis |>
-  filter(Q8_1 == 0 | is.na(Q8_1)) |>
-  filter(partier_folketing == "179")
+  #  filter(Q8_1 == 0 | is.na(Q8_1)) |>
+  #  filter(partier_folketing == "179") |>
+  filter(Progress > 75) # Remove people who haven't done post-placements
 
 # Define a df where cutoff is introduced
 df_cutoff_filtered <-
@@ -94,3 +95,22 @@ p_pred <-
   )
 
 p_pred
+
+
+## Robustness - add sourcing period to reg ##
+
+robust_learning_reg_source <- lm(læring_total ~ treatment + pre_afstand_total + source_prompt, data = df_failed)
+
+summary(robust_learning_reg_source)
+
+robust_learning_reg_source_2 <- lm(læring_total ~ treatment + pre_afstand_total, data = df_failed |> filter(source_prompt != "Før fix af prompt - personlige opslag"))
+
+summary(robust_learning_reg_source_2)
+
+# Tæl de to grupper i regressionen
+df_failed |>
+  filter(source_prompt != "Før fix af prompt - personlige opslag") |>
+  pull(treatment) |> table()
+
+
+df_failed$source_prompt |> table()

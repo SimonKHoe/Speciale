@@ -687,7 +687,17 @@ tillid_bar / tillid_bar_facet
 #         axis.title.x = element_text(margin = margin(t = 15)),
 #         axis.title.y = element_text(margin = margin(r = 15)))
 
-
+# Let's look at the political sofistication var - I'm expecting it to be useless
+df_failed |>
+  ggplot(aes(x = partier_folketing, y = after_stat(prop), group = 1)) +
+  geom_bar() +
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_discrete(drop = FALSE) +
+  theme_tufte(base_size = 14) +
+  labs(title = "Andel af respondentsvar til, hvor mange sæder, der er i Folketinget", y = "Andel", x = "Svarmuligheder") +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 15)),
+    axis.title.y = element_text(margin = margin(r = 15)))
 
 ## SOURCE ##
 # Source bar plot #
@@ -716,35 +726,106 @@ means_df_2 <- df_failed |>
   )
 
 # This can be run with df_analysis AND df_failed
-df_failed |> # Needs to be the df version with both pre and post cutoff
+#sampling_viz <-
+#   df_failed |> # Needs to be the df version with both pre and post cutoff
+#   ggplot(aes(x = StartDate_cph, y = læring_total, group = treatment)) +
+# #  geom_line(aes(color = treatment), linewidth = 0.8, alpha = 0.3) +
+#   geom_point(aes(color = treatment, shape = treatment), size = 2, alpha = 0.35) +
+#   #  geom_hline(yintercept = 0, linetype = "solid", linewidth = 1, alpha = 0.6) +
+#   geom_hline(
+#     data = means_df_2,
+#     aes(yintercept = mean_learning, color = treatment),
+#     linewidth = 1, linetype = "longdash"
+#   ) +
+#   facet_wrap(~source_prompt, scales = "free_x",
+#              labeller = labeller(source_prompt = label_wrap_gen(width = 20))) +
+#   labs(y = "Læring", x = "Tidspunkt / Dato",
+#   # title = "Den gennemsnitlige læring for de to treatmenttyper,
+#   #      fordelt over de tre skelsættende indsamlingsperioder i projektet",
+#        caption = "Note: De stiplede linjer viser gennemsnittet af læring for perioden inden for hvert treatment.") +
+#   theme_simon(base_size = 14) +
+#   scale_color_manual(values = c(
+#     "chat bot" = "#000000",
+#     "artikel"  = "#A3A3A3"
+#   )) +
+#   theme(panel.spacing = unit(1, "cm"),
+#         axis.title.x = element_text(margin = margin(t = 15)),
+#         axis.title.y = element_text(margin = margin(r = 15)),
+#         axis.ticks.length = unit(2.5, "pt"),
+#         legend.position = "bottom") +
+#   scale_x_datetime(
+#     breaks = scales::breaks_pretty(n = 4),
+#     date_labels = "%d-%m\n%H:%M",
+#     guide = guide_axis(check.overlap = TRUE)
+#   )
+
+
+# V2
+facet_counts <- df_failed |> # Count n
+  count(source_prompt)
+
+facet_labels <- setNames( # Named vector for plotting
+  paste0(facet_counts$source_prompt, "\n", "(n = ", scales::comma(facet_counts$n), ")"),
+  facet_counts$source_prompt
+)
+
+sampling_viz <-
+  df_failed |>
   ggplot(aes(x = StartDate_cph, y = læring_total, group = treatment)) +
-#  geom_line(aes(color = treatment), linewidth = 0.8, alpha = 0.3) +
-  geom_point(aes(color = treatment, shape = treatment), size = 2, alpha = 0.5) +
-  #  geom_hline(yintercept = 0, linetype = "solid", linewidth = 1, alpha = 0.6) +
+  geom_point(aes(color = treatment, shape = treatment), size = 2, alpha = 0.35) +
   geom_hline(
     data = means_df_2,
     aes(yintercept = mean_learning, color = treatment),
     linewidth = 1, linetype = "longdash"
   ) +
-  facet_wrap(~source_prompt, scales = "free_x",
-             labeller = labeller(source_prompt = label_wrap_gen(width = 20))) +
-  labs(y = "Læring", x = "Tidspunkt / Dato", title = "Den gennemsnitlige læring for de to treatmenttyper,
-       fordelt over de tre skelsættende indsamlingsperioder i projektet",
-       caption = "Note: De stiplede linjer viser gennemsnittet af læring for perioden inden for hvert treatment.") +
-  theme_simon(base_size = 14) +
+    facet_wrap(
+      ~source_prompt,
+      scales = "free_x",
+      labeller = labeller(
+        source_prompt = function(x) {
+          paste0(
+            stringr::str_wrap(x, width = 20),   # wrap ONLY the title
+            "\n(n = ", scales::comma(facet_counts$n[match(x, facet_counts$source_prompt)]), ")"
+          )
+        }
+      )
+    ) +
+  labs(
+    y = "Læring",
+    x = "Tidspunkt / Dato",
+    caption = str_wrap("Note: De stiplede linjer viser gennemsnittet af
+                       læring for perioden inden for hvert treatment.
+                       10 outliers er uden for det plottede område.", 50)
+  ) +
+  theme_simon(base_size = 15) +
   scale_color_manual(values = c(
     "chat bot" = "#000000",
     "artikel"  = "#A3A3A3"
   )) +
-  theme(panel.spacing = unit(1, "cm"),
-        axis.title.x = element_text(margin = margin(t = 15)),
-        axis.title.y = element_text(margin = margin(r = 15)),
-        axis.ticks.length = unit(2.5, "pt")) +
-  scale_x_datetime(
-    breaks = scales::breaks_pretty(n = 4),
-    date_labels = "%d-%m\n%H:%M",
-    guide = guide_axis(check.overlap = TRUE)
+    scale_x_datetime(
+      breaks = function(x) {
+        rng <- range(x, na.rm = TRUE)
+        rng[1] + diff(rng) * c(0.1, 0.5, 0.9)
+      },
+      date_labels = "%d-%m\n%H:%M",
+      expand = expansion(mult = c(0.02, 0.08))
+    ) +
+  coord_cartesian(clip = "off") +
+  scale_y_continuous(limits = c(-1, 1.8)) +
+  theme(
+    panel.spacing = unit(1, "cm"),
+    plot.margin = margin(10, 25, 10, 10),     # extra right export margin
+    axis.title.x = element_text(margin = margin(t = 19)),
+    axis.text.x = element_text(angle = 0, hjust = 0.5, size = 10),
+    axis.title.y = element_text(margin = margin(r = 15)),
+    axis.ticks.length = unit(2.5, "pt"),
+    legend.position = "bottom"
   )
 
+ggsave("sampling.viz.pdf",
+       plot = sampling_viz,
+       width = 7,
+       height = 7
+)
 
 #### Descriptives end ####
