@@ -150,7 +150,7 @@ summary(lm(læring_total ~ interaction_index + pre_afstand_total, data = df_hyp_
 ### Interaction index regression with controls
 summary(lm(læring_total ~ interaction_index + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
 
-### Interaction index regression with controls and n_char control
+### Interaction index regression with controls and n_char control - THIS IS MAIN MODEL
 summary(lm(læring_total ~ interaction_index + n_chars + pre_afstand_total + Tillid + subjektiv_forståelse, data = df_hyp_2))
 
 # Robustness - look at n_chars inside the index
@@ -173,7 +173,7 @@ ggplot(pred, aes(x = x, y = predicted)) +
   theme_simon(base_size = 14) +
   scale_y_continuous(limits = c(-0.8, 0.8))
 
-### BEHAVIORIAL REGRESSIONS ###
+### BEHAVIORIAL REGRESSIONS AND INDEX SPLITS ###
 # How do the behavorial items interact? #
 
 ### Let's look at items z transformed
@@ -383,7 +383,7 @@ p_one_shot
 ggsave("h2_one_shot.pdf",
        plot = p_one_shot,
        width = 6,
-       height = 6
+       height = 5
 )
 
 

@@ -42,6 +42,12 @@ df <- df_cutoff_filtered
 
 #### Descriptives ####
 
+### Speeders ###
+df |>
+  filter(Duration__in_seconds_ > 60)
+# No speeders
+
+
 ### PARTIES ###
 # Pre-placements #
 # Prep the plot #
@@ -483,7 +489,7 @@ df |>
 # Manipulation check #
 df |>
   ggplot(aes(x = Q9)) +
-  geom_bar() +
+  geom_bar(aes(y = after_stat(prop), group = 1)) +
   labs(
     title = "Fordelingen af svar til manipulationstjek, absolutte tal",
     x = "Hvad handlede din [treatment] primært om?"
@@ -498,6 +504,33 @@ df |>
     panel.spacing = unit(1.5, "cm")
   ) +
   scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 10))
+
+
+### Attention check
+df |>
+  ggplot(aes(x = Q9)) +
+  geom_bar(aes(y = after_stat(prop), group = 1)) +
+  geom_text(
+    stat = "count",
+    aes(
+      y = after_stat(prop),
+      label = scales::percent(after_stat(prop), accuracy = 1),
+      group = 1
+    ),
+    vjust = -0.3
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_simon(base_size = 14) +
+  theme(
+    axis.title.x = element_blank()
+  ) +
+  scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 10)) +
+  labs(
+    title = "Fordelingen af svar til manipulationstjek, absolutte tal",
+    x = "Hvad handlede din [treatment] primært om?",
+    y = "Procent"
+  )
+
 
 # Chat bot issues #
 

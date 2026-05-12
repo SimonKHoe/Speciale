@@ -172,7 +172,7 @@ p_pred
 
 ggsave("h1_læring_plot.pdf",
        plot = p_pred,
-       width = 6, height = 6)
+       width = 6, height = 5)
 
 
 ## Robustness ##
@@ -242,7 +242,7 @@ summary(lm(post_viden ~ subjektiv_forståelse, data = df |> filter(treatment == 
 
 summary(lm(post_viden ~ subjektiv_forståelse, data = df |> filter(treatment == "artikel")))
 
-# The relationship is stronger for the article but is positive and significant in both - try interaction
+# The relationship is only existant for the article  - try interaction
 summary(lm(post_viden ~ subjektiv_forståelse * treatment, data = df))
 
 # Plot the interaction
@@ -292,7 +292,7 @@ h4_interaktion <-
 
 # Export the interaction plot
 ggsave("h4_interaktion.pdf",
-       plot = h4_interaktion.pdf,
+       plot = h4_interaktion,
        width = 6,
        height = 6
        )
@@ -332,6 +332,74 @@ df$overconfidence <- scale(df$subjektiv_forståelse) - scale(df$post_viden)
 
 summary(lm(overconfidence ~ treatment, data = df))
 
+# Dumbbell plot #
+dumbbell_plot_h4 <-
+  df |>
+  select(z_subjektiv_forståelse, z_post_viden, treatment) |>
+  group_by(treatment) |>
+  summarise(
+    mean_z_subjektiv_forståelse = mean(z_subjektiv_forståelse),
+    mean_z_post_viden = mean(z_post_viden)
+  ) |>
+  ungroup() |>
+  ggplot() +
+
+  geom_segment(
+    aes(
+      x = mean_z_post_viden,
+      xend = mean_z_subjektiv_forståelse,
+      y = treatment,
+      yend = treatment
+    )
+  ) +
+
+  geom_point(
+    aes(
+      x = mean_z_post_viden,
+      y = treatment,
+      color = "Post-viden",
+      shape = treatment
+    ),
+    size = 3.5
+  ) +
+
+  geom_point(
+    aes(
+      x = mean_z_subjektiv_forståelse,
+      y = treatment,
+      color = "Subjektiv forståelse",
+      shape = treatment
+    ),
+    size = 3.5
+  ) +
+
+  scale_color_manual(
+    name = NULL,
+    values = c(
+      "Post-viden" = "#A3A3A3",
+      "Subjektiv forståelse" = "black"
+    )
+  ) +
+
+  guides(shape = "none") +
+  labs(x = "Z-Standardiseret niveau",
+#       y = "Treatment",
+       caption = str_wrap("Note: Højere værdier angiver relativt højere subjektiv forståelse eller
+       post_viden sammenlignet med samplets gennemsnit", 45)
+       ) +
+  theme_simon(base_size = 14, ticks = FALSE) +
+  theme(legend.position = "bottom",
+        plot.caption = element_text(margin = margin(t = 15)),
+        axis.title.x = element_text(margin = margin(t = 15)),
+        axis.title.y = element_blank()
+        )
+
+ggsave("dumbbell_plot_h4.pdf",
+       plot = dumbbell_plot_h4,
+       height = 5,
+       width = 6)
+
+
 # # Visualize the correlation facetted
 # df |>
 #   ggplot(aes(y = post_viden, x = subjektiv_forståelse, groups = treatment)) +
@@ -363,6 +431,9 @@ df |>
   theme_minimal() +
   facet_wrap(~treatment)
 
+
+# Look at learning
+summary(lm(læring_total ~ subjektiv_forståelse + pre_afstand_total, data = df))
 
 summary(lm(læring_total ~ subjektiv_forståelse + pre_afstand_total, data = df |> filter(treatment == "chat bot")))
 
