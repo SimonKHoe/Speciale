@@ -44,7 +44,7 @@ df <- df_cutoff_filtered
 
 ### Speeders ###
 df |>
-  filter(Duration__in_seconds_ > 60)
+  filter(Duration__in_seconds_ < 60)
 # No speeders
 
 
@@ -226,6 +226,12 @@ post_bar <-
                      # , labels = NULL
                      )
 
+ggsave("appendix_a/post_bar.pdf",
+  plot = post_bar,
+  height = 6,
+  width = 6
+)
+
 
 ## LÆRING ##
 df_læring_long <-
@@ -277,11 +283,6 @@ læring_bar <-
 # Patchwork
 pre_post_bars <- pre_bar + post_bar
 
-# Export as pdf
-ggsave("pre_post_bars.pdf",
-       plot = pre_post_bars,
-       height = 10,
-       width = 10)
 
 
 # Learning facetted on treatment #
@@ -374,40 +375,13 @@ ggsave("pre_og_læring_patch.pdf",
        width = 6
 )
 
-# Facetted on treatment
-# læring_dotwhisker_facet <-
-#   ggplot(
-#     læring_summary,
-#     aes(x = fct_reorder(parti, mean_afstand, .desc = TRUE),
-#         y = mean_afstand)
-#   ) +
-#   geom_point(size = 2) +
-#   geom_errorbar(
-#     aes(ymin = mean_afstand - 1.96 * se,
-#         ymax = mean_afstand + 1.96 * se),
-#     width = 0.1
-#   ) +
-#   geom_hline(yintercept = 0, alpha = 0.85) +
-#   facet_wrap(~ treatment, axes = "all_y") +
-#   labs(
-#     title = "Gennemsnitlig læring pr. parti og treatment",
-#     x = "Parti",
-#     y = "Gennemsnitlig læring"
-#   ) +
-#   theme_simon(base_size = 14) +
-#   theme(
-#     axis.title.x = element_blank(),
-#     axis.title.y = element_blank(),
-#     panel.spacing = unit(1.5, "cm")
-#   ) +
-#   scale_y_continuous(breaks = seq(-0.4, 1.4, by = 0.2))
-
 
 ### Variable ###
 
 # Pre - placering #
 # Delt op på treatment
-df |>
+pre_afstand_boxplot <-
+  df |>
   ggplot(aes(x = treatment, y = pre_afstand_total)) +
   geom_boxplot() +
   theme_simon(base_size = 14, ticks = FALSE) +
@@ -418,8 +392,14 @@ df |>
     axis.title.x = element_text(margin = margin(t = 15)),
     axis.title.y = element_text(margin = margin(r = 15)))
 
+ggsave("appendix_a/pre_afstand_boxplot.pdf",
+       plot = pre_afstand_boxplot,
+       height = 6,
+       width = 6)
+
 # Spredning samlet
-df |>
+pre_treatment_spredning <-
+  df |>
   ggplot(aes(x = pre_afstand_total)) +
   geom_histogram(aes(y = after_stat(density)),
                  binwidth = 0.1, alpha = 0.4) +
@@ -434,31 +414,15 @@ df |>
     panel.spacing = unit(1.5, "cm")
   )
 
-
-# Pre distance average
-mean_pre_distance <-
-  df |>
-  mutate(mean_pre = mean(pre_afstand_total)) |>
-  pull(mean_pre)
-
-# Mean pre distance chat bot
-mean_pre_distance_chatbot <-
-  df |>
-  filter(treatment == "chat bot") |>
-  mutate(mean_pre = mean(pre_afstand_total)) |>
-  pull(mean_pre)
-
-# Mean pre distance article
-mean_pre_distance_article <-
-  df |>
-  filter(treatment == "artikel") |>
-  mutate(mean_pre = mean(pre_afstand_total)) |>
-  pull(mean_pre)
-
+ggsave("appendix_a/pre_treatment_spredning.pdf",
+       plot = pre_treatment_spredning,
+       height = 6,
+       width = 6)
 
 # Post - placering #
 # Delt op på treatment
-df |>
+post_afstand_boxplot <-
+  df |>
   ggplot(aes(x = treatment, y = post_afstand_total)) +
   geom_boxplot() +
   theme_simon(base_size = 14, ticks = FALSE) +
@@ -469,8 +433,14 @@ df |>
     axis.title.x = element_text(margin = margin(t = 15)),
     axis.title.y = element_text(margin = margin(r = 15)))
 
+ggsave("appendix_a/post_afstand_boxplot.pdf",
+       plot = post_afstand_boxplot,
+       height = 6,
+       width = 6)
+
 # Spredning samlet
-df |>
+post_treatment_spredning <-
+  df |>
   ggplot(aes(x = post_afstand_total)) +
   geom_histogram(aes(y = after_stat(density)),
                  binwidth = 0.1, alpha = 0.4) +
@@ -485,29 +455,14 @@ df |>
     panel.spacing = unit(1.5, "cm")
   )
 
-
-# Manipulation check #
-df |>
-  ggplot(aes(x = Q9)) +
-  geom_bar(aes(y = after_stat(prop), group = 1)) +
-  labs(
-    title = "Fordelingen af svar til manipulationstjek, absolutte tal",
-    x = "Hvad handlede din [treatment] primært om?"
-    # ,caption = str_wrap(
-    #   "Note: Respondenterne har svaret på spørgsmålet: 'Hvor troværdig synes du, at den information du har fået fra [Treatment] er?'",
-    #   60)
-  ) +
-  theme_simon(base_size = 12) +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    panel.spacing = unit(1.5, "cm")
-  ) +
-  scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 10))
-
+ggsave("appendix_a/post_treatment_spredning.pdf",
+       plot = post_treatment_spredning,
+       height = 6,
+       width = 6)
 
 ### Attention check
-df |>
+attention_bars <-
+  df |>
   ggplot(aes(x = Q9)) +
   geom_bar(aes(y = after_stat(prop), group = 1)) +
   geom_text(
@@ -531,6 +486,10 @@ df |>
     y = "Procent"
   )
 
+ggsave("appendix_a/attention_bars.pdf",
+       plot = attention_bars,
+       height = 6,
+       width = 6)
 
 # Chat bot issues #
 
@@ -560,13 +519,20 @@ df_long_cb <- df_plot |>
   mutate(option_label = var_labels[option])
 
 # Plot
-df_long_cb |>
+problemer_chat_bot <-
+  df_long_cb |>
   ggplot(aes(x = reorder(option_label, -number), y = number)) +
   geom_col() +
   theme_simon(base_size = 14) +
   scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 10)) +
   theme(axis.title.x = element_blank()) +
-  labs(title = "Fordelingen af rapporterede problemer med chat botten")
+  labs(title = "Fordelingen af rapporterede problemer med chat botten",
+       y = "Antal")
+
+ggsave("appendix_a/problemer_chat_bot.pdf",
+       plot = problemer_chat_bot,
+       height = 6,
+       width = 6)
 
 # Visualize the text answers
 df_quotes <- df |>
@@ -576,10 +542,14 @@ df_quotes <- df |>
     quote = str_wrap(paste0("“", Q8_5_TEXT, "”"), width = 100)
   )
 
-ggplot(df_quotes, aes(x = 1, y = id, label = quote)) +
+text_answers_problems <-
+  ggplot(df_quotes, aes(x = 1, y = id, label = quote)) +
   geom_text(hjust = 0, size = 3.5, lineheight = 1.1) +
   xlim(1, 5) +
   theme_void()
+
+ggsave("appendix_a/text_answers_problems.pdf",
+       plot = text_answers_problems)
 
 # Time spent on article #
 df |>
