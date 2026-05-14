@@ -567,6 +567,42 @@ df |>
   ) +
   scale_x_continuous(breaks = seq(0, 600, by = 30))
 
+### Pull out average time spent on survey
+average_time <-
+  df |>
+  summarise(mean_time_minutes = (mean(Duration__in_seconds_)) / 60) |>
+  pull(mean_time_minutes)
+
+# Check out distribution of time percent
+df |>
+  mutate(Duration_minutes = Duration__in_seconds_ / 60) |>
+  ggplot(aes(x = Duration_minutes,
+             y = after_stat(count / sum(count)))) +
+  geom_histogram(bins = 100) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_simon(base_size = 14) +
+  labs(
+    x = "Tid brugt på survey i minutter",
+    y = "Procent af respondenter"
+  )
+
+
+# Truncated percent
+df |>
+  mutate(Duration_minutes = Duration__in_seconds_ / 60) |>
+  ggplot(aes(x = Duration_minutes,
+             y = after_stat(count / sum(count)))) +
+  geom_histogram(bins = 12) +
+  scale_y_continuous(label = scales::percent) +
+  theme_simon(base_size = 14) +
+  labs(
+    x = "Tid brugt på survey i minutter",
+    y = "Procent af respondenter",
+    caption = str_wrap("Bemærk at x-aksen er trunkeret. 18 observationer er udenfor 11 minutter", 45)
+  ) +
+  scale_x_continuous(breaks = seq(0, 11, by = 1), limits = c(0, 12)) +
+  theme(plot.caption = element_text(margin = margin(t = 40), size = 11))
+
 
 
 ## BOXPLOT TREATMENTS ##
