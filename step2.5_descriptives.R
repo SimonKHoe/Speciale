@@ -573,6 +573,13 @@ average_time <-
   summarise(mean_time_minutes = (mean(Duration__in_seconds_)) / 60) |>
   pull(mean_time_minutes)
 
+### Pull median time spent
+median_time <-
+  df |>
+  summarise(median_time_minutes = median(Duration__in_seconds_) / 60) |>
+  pull(median_time_minutes)
+
+
 # Check out distribution of time percent
 df |>
   mutate(Duration_minutes = Duration__in_seconds_ / 60) |>
@@ -588,7 +595,8 @@ df |>
 
 
 # Truncated percent
-df |>
+time_spent_hist <-
+  df |>
   mutate(Duration_minutes = Duration__in_seconds_ / 60) |>
   ggplot(aes(x = Duration_minutes,
              y = after_stat(count / sum(count)))) +
@@ -603,6 +611,33 @@ df |>
   scale_x_continuous(breaks = seq(0, 11, by = 1), limits = c(0, 12)) +
   theme(plot.caption = element_text(margin = margin(t = 40), size = 11))
 
+ggsave("appendix_a/time_spent_hist.pdf",
+       plot = time_spent_hist,
+       height = 6,
+       width = 6)
+
+# Boxplot time
+time_spent_treatments <-
+  df |>
+  mutate(Duration_minutes = Duration__in_seconds_ / 60) |>
+  ggplot(aes(x = treatment, y = Duration_minutes)) +
+  geom_boxplot() +
+  theme_simon(base_size = 14, ticks = FALSE) +
+  labs(title = "Fordelingen af tid brugt mellem de to treatments",
+       y = "Tid brugt på survey i minutter",
+       x = "Treatment",
+       caption = str_wrap("Bemærk at y-aksen er trunkeret. 15 observationer er udenfor det plottede område", 45)) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 15)),
+    axis.title.y = element_text(margin = margin(r = 15)),
+    plot.caption = element_text(margin = margin(t = 40), size = 11)
+    ) +
+  scale_y_continuous(breaks = seq(0, 12, by = 1), limits = c(0, 12))
+
+ggsave("appendix_a/time_spent_treatments.pdf",
+       plot = time_spent_treatments,
+       height = 6,
+       width = 6)
 
 
 ## BOXPLOT TREATMENTS ##
