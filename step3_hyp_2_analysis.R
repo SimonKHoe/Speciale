@@ -14,6 +14,7 @@ library(tidyr)
 library(patchwork)
 library(ggthemes)
 library(officer)
+library(ggeffects)
 
 ## Load data ##
 df_analysis <-
@@ -302,7 +303,7 @@ ggsave("h2_interation_tekst.pdf",
 #   theme_simon(base_size = 14)
 
 
-# split til to grupper - dem med one shot-interaktioner, og dem uden
+# Split into three groups - none, one shots and multiples
 df_hyp_2 <-
   df_hyp_2 |>
   mutate(one_shot = case_when(
@@ -387,9 +388,10 @@ ggsave("h2_one_shot.pdf",
 )
 
 
+# TRUST INTERACTION Interactionindex #
+summary(lm(læring_total ~ Tillid + interaction_index + pre_afstand_total, data = df_hyp_2 |> filter(treatment == "chat bot")))
 
-#### Classifications ####
-
+summary(lm(læring_total ~ Tillid * interaction_index + pre_afstand_total, data = df_hyp_2 |> filter(treatment == "chat bot")))
 
 #### DESCRIPTIVES ON INTERACTIONS ####
 

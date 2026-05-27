@@ -87,6 +87,9 @@ df_analysis <-
   mutate(facebook_dummy = if_else(StartDate_cph > facebook, "post-fb", "pre-fb")) |>
   rename('subjektiv_forståelse' = 'Q11') |>
   rename('partier_folketing' = 'Q48') |>
+  mutate(folketing_dummy = if_else(partier_folketing == "179", 1, 0 # Keep as numbers for y-var downstream
+                                  )
+  ) |>
   mutate(source = if_else(source == "", "personal", source) # using if else for recode is not BP, but necessary to address blank spaces
   ) |>
   mutate(source = case_when( # Give source more clear names for downstream plotting
@@ -108,7 +111,9 @@ df_analysis <-
            "Efter fix - Facebook grupper"
          )
          ) |>
-  mutate(treatment = fct_relevel(treatment, "artikel")) # Turn the article into the reference cat
+  mutate(treatment = fct_relevel(treatment, "artikel")) |>  # Turn the article into the reference cat
+  mutate(z_subjektiv_post = z_subjektiv_forståelse - z_post_viden) |>  # z transform subjektiv forståelse
+  mutate(attention_check_dummy = if_else(Q9 == "Partiernes holdninger til EUs rolle i Danmark", 1, 0))
 
 
 # Export the analysis ready df

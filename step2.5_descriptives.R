@@ -14,6 +14,7 @@ library(tidyr)
 library(dotwhisker)
 library(ggeffects)
 library(ggthemes)
+library(modelsummary)
 
 #### Load data ####
 df_analysis <-
@@ -39,8 +40,49 @@ df <- df_cutoff_filtered
 
 #### ####
 
-
 #### Descriptives ####
+
+### Balance test ###
+# balance_pre <- lm(pre_afstand_total ~ treatment, data = df)
+#
+# balance_sof <- lm(folketing_dummy ~ treatment, data = df)
+#
+# modelsummary(
+#   list(
+#     "Pre-treatment afstand" = balance_pre,
+#     "Politisk sofistikation" = balance_sof
+#   ),
+#   statistic = "({std.error})",
+#   stars = TRUE,
+#   gof_omit = "AIC|BIC|Log|Adj|F|RMSE",
+#   output = "balance_table.tex"
+# )
+
+balance_tab <- tibble(
+  Variabel = c("Præ-treatment afstand", "Politisk sofistikation"),
+
+  Artikel = c(
+    mean(df$pre_afstand_total[df$treatment == "artikel"], na.rm = TRUE),
+    mean(df$folketing_dummy[df$treatment == "artikel"], na.rm = TRUE)
+  ),
+
+  Chatbot = c(
+    mean(df$pre_afstand_total[df$treatment == "chat bot"], na.rm = TRUE),
+    mean(df$folketing_dummy[df$treatment == "chat bot"], na.rm = TRUE)
+  ),
+
+  Difference = c(
+    coef(balance_pre)[2],
+    coef(balance_sof)[2]
+  ),
+
+  `p-værdi` = c(
+    summary(balance_pre)$coefficients[2,4],
+    summary(balance_sof)$coefficients[2,4]
+  )
+)
+
+balance_tab
 
 ### Speeders ###
 df |>
@@ -365,7 +407,6 @@ læring_dotwhisker <-
 # patchwork pre_placement and learning
 pre_og_læring_patchwork <-
   pre_points / læring_dotwhisker +
-  plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
 
 # Export patchwork

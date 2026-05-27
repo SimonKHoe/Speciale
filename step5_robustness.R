@@ -114,3 +114,19 @@ df_failed |>
 
 
 df_failed$source_prompt |> table()
+
+
+# Check attention check influence
+robust_learning_reg_source <- lm(læring_total ~ treatment + pre_afstand_total, data = df)
+
+summary(lm(læring_total ~ treatment + attention_check_dummy + pre_afstand_total, data = df))
+
+summary(lm(attention_check_dummy ~ treatment + pre_afstand_total, data = df))
+
+
+# Attention check source prompt
+attention_check_2 <- lm(læring_total ~ treatment + pre_afstand_total + source_prompt + attention_check_dummy, data = df_failed)
+
+summary(lm(attention_check_dummy ~ treatment + pre_afstand_total + source_prompt, data = df_failed))
+
+summary(attention_check_2)

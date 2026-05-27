@@ -126,6 +126,8 @@ summary(lm(post_afstand_total ~ treatment + pre_afstand_total, data = df))
 # Mean sensecheck - descriptive statistics
 mean(df_chat_bot$pre_afstand_total)
 mean(df_article$pre_afstand_total)
+mean(df_chat_bot$post_afstand_total)
+mean(df_article$post_afstand_total)
 
 ## Plot and regression pipe ##
 
@@ -215,10 +217,11 @@ summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df |> filter(treat
 # Interaktion
 summary(lm(læring_total ~ Tillid * treatment + pre_afstand_total, data = df))
 
-
 summary(lm(læring_total ~ treatment + pre_afstand_total, data = df |> filter(Tillid > 4)))
 # We lack power for the interaction - but could also be that it isn't there
 
+# Let's check the effects of trust inside cb group
+summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df))
 
 # ANCOVA Robustness
 summary(lm(post_afstand_total ~ treatment + Tillid + pre_afstand_total, data = df))
@@ -400,6 +403,24 @@ ggsave("dumbbell_plot_h4.pdf",
        width = 6)
 
 
+
+# Test whether over/underconfidence can be attributed to each group
+# Create z_subjektiv_post
+df_h4 <-
+  df |>
+  mutate(z_subjektiv_post = z_subjektiv_forståelse - z_post_viden)
+
+
+t.test(
+  df_h4$z_subjektiv_post[df_h4$treatment == "artikel"],
+  mu = 0
+)
+
+t.test(
+  df_h4$z_subjektiv_post[df_h4$treatment == "chat bot"],
+  mu = 0
+)
+
 # # Visualize the correlation facetted
 # df |>
 #   ggplot(aes(y = post_viden, x = subjektiv_forståelse, groups = treatment)) +
@@ -409,17 +430,7 @@ ggsave("dumbbell_plot_h4.pdf",
 #   facet_wrap(~treatment, scales = "free_x")
 
 
-
 # Exploration
-df_h4 <-
-  df |>
-  mutate(z_subjektiv_post = z_subjektiv_forståelse - z_post_viden)
-
-# Viz
-df_h4 |>
-  ggplot(aes(y = z_subjektiv_post, x = treatment)) +
-  geom_col()
-
 # Post knowledge and Subjective understanding
 summary(lm(z_subjektiv_forståelse ~ z_post_viden * treatment, data = df))
 
