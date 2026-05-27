@@ -113,11 +113,30 @@ t.test(df_chat_bot$læring_total) # two sided t-test
 t.test(læring_total ~ treatment, data = df)
 
 # Bivariate
-summary(lm(læring_total ~ treatment, data = df))
+h1_bivariate <- lm(læring_total ~ treatment, data = df)
 
 # Pre-learning control
-pre_learning_reg <- lm(læring_total ~ treatment + pre_afstand_total, data = df)
-summary(pre_learning_reg)
+h1_pre_learning_reg <- lm(læring_total ~ treatment + pre_afstand_total, data = df)
+summary(h1_pre_learning_reg)
+
+# Create modelsummary for the two
+modelsummary(
+  list(
+    "Bivariat" = bivariate,
+    "Kontrol" = h1_pre_learning_reg
+  ),
+  stars = TRUE,
+  fmt = 3,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  coef_map = c(
+    "(Intercept)" = "Konstant",
+    "treatmentchat bot" = "Chatbot",
+    "pre_afstand_total" = "Præ-treatment afstand"
+  ),
+  gof_map = c("nobs", "r.squared", "adj.r.squared"),
+  output = "regressions/h1_regression.tex"
+)
 
 
 # ANCOVA Robustness
@@ -142,7 +161,7 @@ newdata_2 <- data.frame(
   pre_afstand_total = mean(df$pre_afstand_total, na.rm = TRUE)
 )
 
-pred <- predict(pre_learning_reg, newdata = newdata_2, interval = "confidence")
+pred <- predict(h1_pre_learning_reg, newdata = newdata_2, interval = "confidence")
 
 pred_df <- bind_cols(newdata_2, as.data.frame(pred)) |>
   left_join(n_df, by = "treatment") # Join the n's onto the plot df

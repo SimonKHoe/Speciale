@@ -16,6 +16,7 @@ library(ggeffects)
 library(ggthemes)
 library(AER)
 library(broom)
+library(modelsummary)
 
 #### Load data ####
 df_analysis <-
@@ -96,6 +97,24 @@ iv_model <- ivreg(læring_total ~ engaged_chatbot_dummy + pre_afstand_total | tr
 
 summary(iv_model, diagnostics = TRUE)
 
+# Summary the regressions for export
+modelsummary(
+  list(
+    "Første trin" = first_stage,
+    "Andet trin (LATE)" = iv_model
+  ),
+  stars = TRUE,
+  fmt = 3,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  coef_map = c(
+    "treatment_dummy" = "Treatment",
+    "engaged_chatbot_dummy" = "Engageret chatbot",
+    "pre_afstand_total" = "Præ-treatment afstand",
+    "(Intercept)" = "Konstant"
+  ),
+  output = "regressions/late_regression.tex"
+)
 
 ### PLOT WITH ITT ###
 #### HYPOTHESIS 1 ####
