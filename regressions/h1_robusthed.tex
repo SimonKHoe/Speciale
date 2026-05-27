@@ -4,26 +4,26 @@
 caption={Robusthedsanalyser for Hypotese 1},
 ]                     %% tabularray outer close
 {                     %% tabularray inner open
-colspec={Q[]Q[]Q[]Q[]},
-column{2,3,4}={}{halign=c,},
+colspec={Q[]Q[]Q[]Q[]Q[]},
+column{2,3,4,5}={}{halign=c,},
 column{1}={}{halign=l,},
-hline{12}={1,2,3,4}{solid, black, 0.05em},
+hline{12}={1,2,3,4,5}{solid, black, 0.05em},
 }                     %% tabularray inner close
 \toprule
-& Baseline & SF ekskluderet & Kontrol for prompt-periode \\ \midrule %% TinyTableHeader
-Konstant                      & \num{-0.421}*** & \num{-0.409}*** & \num{-0.367}*** \\
-& (\num{0.093})   & (\num{0.108})   & (\num{0.100})   \\
-Chatbot                       & \num{-0.143}*   & \num{-0.126}+   & \num{-0.144}*   \\
-& (\num{0.062})   & (\num{0.072})   & (\num{0.062})   \\
-Præ-treatment afstand         & \num{0.439}***  & \num{0.463}***  & \num{0.401}***  \\
-& (\num{0.043})   & (\num{0.050})   & (\num{0.041})   \\
-Efter fix (personlige opslag) &                  &                  & \num{0.113}     \\
-&                  &                  & (\num{0.084})   \\
-Efter fix (Facebook-grupper)  &                  &                  & \num{-0.051}    \\
-&                  &                  & (\num{0.073})   \\
-Num.Obs.                      & \num{247}       & \num{247}       & \num{278}       \\
-R2                            & \num{0.315}     & \num{0.273}     & \num{0.300}     \\
-R2 Adj.                       & \num{0.310}     & \num{0.267}     & \num{0.289}     \\
+& Baseline & SF ekskluderet & Kontrol for prompt-periode & Kun engagerede respondenter \\ \midrule %% TinyTableHeader
+Konstant                      & \num{-0.421}*** & \num{-0.409}*** & \num{-0.367}*** & \num{-0.499}*** \\
+& (\num{0.093})   & (\num{0.108})   & (\num{0.100})   & (\num{0.092})   \\
+Chatbot                       & \num{-0.143}*   & \num{-0.126}+   & \num{-0.144}*   & \num{-0.124}*   \\
+& (\num{0.062})   & (\num{0.072})   & (\num{0.062})   & (\num{0.061})   \\
+Præ-treatment afstand         & \num{0.439}***  & \num{0.463}***  & \num{0.401}***  & \num{0.502}***  \\
+& (\num{0.043})   & (\num{0.050})   & (\num{0.041})   & (\num{0.043})   \\
+Efter fix (personlige opslag) &                  &                  & \num{0.113}     &                  \\
+&                  &                  & (\num{0.084})   &                  \\
+Efter fix (Facebook-grupper)  &                  &                  & \num{-0.051}    &                  \\
+&                  &                  & (\num{0.073})   &                  \\
+Num.Obs.                      & \num{247}       & \num{247}       & \num{278}       & \num{223}       \\
+R2                            & \num{0.315}     & \num{0.273}     & \num{0.300}     & \num{0.392}     \\
+R2 Adj.                       & \num{0.310}     & \num{0.267}     & \num{0.289}     & \num{0.386}     \\
 \bottomrule
 \end{talltblr}
 \end{table}
