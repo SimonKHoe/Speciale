@@ -522,14 +522,14 @@ attention_bars <-
   ) +
   scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 10)) +
   labs(
-    title = "Fordelingen af svar til manipulationstjek, absolutte tal",
+    title = "Fordelingen af svar til attention check",
     x = "Hvad handlede din [treatment] primært om?",
     y = "Procent"
   )
 
 ggsave("appendix_a/attention_bars.pdf",
        plot = attention_bars,
-       height = 6,
+       height = 5,
        width = 6)
 
 # Chat bot issues #
@@ -541,6 +541,11 @@ var_labels <- sapply(
 )
 
 # Pivot multi selects
+n_respondenter <- df |>
+  select(starts_with("Q8_"), -Q8_5_TEXT) |>
+  filter(if_any(everything(), ~ !is.na(.))) |>
+  nrow()
+
 df_plot <- df |>
   select(-Q8_5_TEXT) |>
   select(starts_with("Q8_")) |>
@@ -563,17 +568,43 @@ df_long_cb <- df_plot |>
 problemer_chat_bot <-
   df_long_cb |>
   ggplot(aes(x = reorder(option_label, -number), y = number)) +
-  geom_col() +
+  geom_col(width =0.5) +
   theme_simon(base_size = 14) +
   scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 10)) +
   theme(axis.title.x = element_blank()) +
-  labs(title = "Fordelingen af rapporterede problemer med chat botten",
-       y = "Antal")
+  labs(
+    title = paste0(
+      "Fordelingen af rapporterede problemer med chatbotten (n = ",
+      n_respondenter,
+      ")"
+    ),
+    y = "Antal, der har valgt kategorien"
+  )
 
 ggsave("appendix_a/problemer_chat_bot.pdf",
        plot = problemer_chat_bot,
-       height = 6,
+       height = 4,
        width = 6)
+
+problemer_chat_bot_single <-
+  df |>
+  filter(!is.na(Q7)) |>
+  ggplot(aes(x = Q7)) +
+  geom_bar(aes(y = after_stat(count / sum(count))),
+           width = 0.5) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_simon() +
+  labs(title = str_wrap("Fordelingen på single select spørgsmålet, om man havde problemer med chatbotten", 80,),
+       y = "Procent") +
+  theme(axis.title.x = element_blank()
+  ) +
+  scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 20))
+
+ggsave("problemer_chat_bot_single.pdf",
+       plot = problemer_chat_bot_single,
+       height = 4,
+       width = 6)
+
 
 # Visualize the text answers
 df_quotes <- df |>
@@ -622,7 +653,9 @@ median_time <-
 
 
 # Check out distribution of time percent
-df |>
+chat_bot_time <-
+  df |>
+  filter(treatment == "chat bot") |>
   mutate(Duration_minutes = Duration__in_seconds_ / 60) |>
   ggplot(aes(x = Duration_minutes,
              y = after_stat(count / sum(count)))) +
@@ -630,10 +663,15 @@ df |>
   scale_y_continuous(labels = scales::percent) +
   theme_simon(base_size = 14) +
   labs(
+    title = "Tid brugt på survey for chat bot brugere, utrunkeret",
     x = "Tid brugt på survey i minutter",
     y = "Procent af respondenter"
   )
 
+ggsave("chat_bot_time.pdf",
+       plot = chat_bot_time,
+       height = 5,
+       width = 6)
 
 # Truncated percent
 time_spent_hist <-
@@ -664,20 +702,22 @@ time_spent_treatments <-
   ggplot(aes(x = treatment, y = Duration_minutes)) +
   geom_boxplot() +
   theme_simon(base_size = 14, ticks = FALSE) +
-  labs(title = "Fordelingen af tid brugt mellem de to treatments",
+  labs(
+    title = "Fordelingen af tid brugt mellem de to treatments med outliers",
        y = "Tid brugt på survey i minutter",
        x = "Treatment",
-       caption = str_wrap("Bemærk at y-aksen er trunkeret. 15 observationer er udenfor det plottede område", 45)) +
+#       caption = str_wrap("Bemærk at y-aksen er trunkeret. 15 observationer er udenfor det plottede område", 45)
+       ) +
   theme(
     axis.title.x = element_text(margin = margin(t = 15)),
     axis.title.y = element_text(margin = margin(r = 15)),
     plot.caption = element_text(margin = margin(t = 40), size = 11)
-    ) +
-  scale_y_continuous(breaks = seq(0, 12, by = 1), limits = c(0, 12))
+    )
+#  scale_y_continuous(breaks = seq(0, 12, by = 1), limits = c(0, 12))
 
-ggsave("appendix_a/time_spent_treatments.pdf",
+ggsave("appendix_a/time_spent_treatments_untruncated.pdf",
        plot = time_spent_treatments,
-       height = 6,
+       height = 5,
        width = 6)
 
 
