@@ -13,6 +13,7 @@ library(labelled)
 library(tidyr)
 library(dotwhisker)
 library(ggeffects)
+library(ggthemes)
 
 # Define my own ggplot theme
 
