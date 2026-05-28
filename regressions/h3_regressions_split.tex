@@ -1,0 +1,28 @@
+\begin{table}
+\centering
+\begin{tblr}[         %% tabularray outer open
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]Q[]Q[]},
+column{2,3,4}={}{halign=c,},
+column{1}={}{halign=l,},
+hline{12}={1,2,3,4}{solid, black, 0.05em},
+}                     %% tabularray inner close
+\toprule
+& Chatbotbrugere & Artikelbrugere & Tillid × treatment \\ \midrule %% TinyTableHeader
+Konstant              & \num{-0.716}** & \num{-0.748}** & \num{-0.631}** \\
+& (\num{0.218})  & (\num{0.252})  & (\num{0.238})  \\
+Chatbot               &                 &                 & \num{-0.188}   \\
+&                 &                 & (\num{0.277})  \\
+Tillid                & \num{0.065}    & \num{0.058}    & \num{0.052}    \\
+& (\num{0.049})  & (\num{0.056})  & (\num{0.057})  \\
+Præ-treatment afstand & \num{0.398}*** & \num{0.498}*** & \num{0.447}*** \\
+& (\num{0.062})  & (\num{0.060})  & (\num{0.044})  \\
+Tillid × chatbot      &                 &                 & \num{0.018}    \\
+&                 &                 & (\num{0.074})  \\
+Num.Obs.              & \num{128}      & \num{119}      & \num{247}      \\
+R2                    & \num{0.247}    & \num{0.370}    & \num{0.323}    \\
+R2 Adj.               & \num{0.235}    & \num{0.359}    & \num{0.312}    \\
+\bottomrule
+\end{tblr}
+\end{table}
