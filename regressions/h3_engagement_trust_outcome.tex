@@ -7,17 +7,19 @@ caption={Tillid og læring, kun for engagerede respondenter},
 colspec={Q[]Q[]},
 column{2}={}{halign=c,},
 column{1}={}{halign=l,},
-hline{6}={1,2}{solid, black, 0.05em},
+hline{8}={1,2}{solid, black, 0.05em},
 }                     %% tabularray inner close
 \toprule
-& Tillid \\ \midrule %% TinyTableHeader
-Konstant & \num{3.739}*** \\
-& (\num{0.077})  \\
-Chatbot  & \num{-0.279}*  \\
-& (\num{0.108})  \\
-Num.Obs. & \num{247}      \\
-R2       & \num{0.027}    \\
-R2 Adj.  & \num{0.023}    \\
+& Robust.Eng \\ \midrule %% TinyTableHeader
+Konstant              & \num{-0.694}*** \\
+& (\num{0.170})   \\
+Chatbot               & \num{-0.110}+   \\
+& (\num{0.062})   \\
+Præ-treatment afstand & \num{0.506}***  \\
+& (\num{0.043})   \\
+Num.Obs.              & \num{223}       \\
+R2                    & \num{0.397}     \\
+R2 Adj.               & \num{0.389}     \\
 \bottomrule
 \end{talltblr}
 \end{table}
