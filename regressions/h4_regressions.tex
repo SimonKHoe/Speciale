@@ -1,0 +1,27 @@
+\begin{table}
+\centering
+\begin{talltblr}[         %% tabularray outer open
+caption={Sammenhængen mellem subjektiv forståelse og viden},
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]Q[]Q[]Q[]},
+column{2,3,4,5}={}{halign=c,},
+column{1}={}{halign=l,},
+hline{10}={1,2,3,4,5}{solid, black, 0.05em},
+}                     %% tabularray inner close
+\toprule
+& Bivariat & Chatbotbrugere & Aritkelbrugere & Interaktion \\ \midrule %% TinyTableHeader
+Konstant                       & \num{-1.995}*** & \num{-1.882}*** & \num{-2.273}*** & \num{-2.273}*** \\
+& (\num{0.188})   & (\num{0.232})   & (\num{0.343})   & (\num{0.365})   \\
+Subjektiv forståelse           & \num{0.121}*    & \num{0.085}     & \num{0.196}*    & \num{0.196}*    \\
+& (\num{0.047})   & (\num{0.059})   & (\num{0.084})   & (\num{0.089})   \\
+Chatbot                        &                  &                  &                  & \num{0.391}     \\
+&                  &                  &                  & (\num{0.426})   \\
+Subjektiv forståelse × chatbot &                  &                  &                  & \num{-0.111}    \\
+&                  &                  &                  & (\num{0.105})   \\
+Num.Obs.                       & \num{247}       & \num{128}       & \num{119}       & \num{247}       \\
+R2                             & \num{0.026}     & \num{0.016}     & \num{0.045}     & \num{0.032}     \\
+R2 Adj.                        & \num{0.022}     & \num{0.008}     & \num{0.037}     & \num{0.020}     \\
+\bottomrule
+\end{talltblr}
+\end{table}
