@@ -91,9 +91,12 @@ df_late <- # Left joins max turns back onto OG df
 
 # IV Regression
 first_stage <- lm(engaged_chatbot_dummy ~ treatment_dummy + pre_afstand_total, data = df_late)
-summary(first_stage)
 
 iv_model <- ivreg(læring_total ~ engaged_chatbot_dummy + pre_afstand_total | treatment_dummy + pre_afstand_total, data = df_late)
+
+# Export for joined H1
+iv_model |>
+  saveRDS("iv_model.rds")
 
 summary(iv_model, diagnostics = TRUE)
 

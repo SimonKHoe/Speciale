@@ -112,8 +112,10 @@ t.test(df_chat_bot$læring_total) # two sided t-test
 summary(lm(læring_total ~ treatment, data = df))
 
 # Pre-learning control
-pre_learning_reg <- lm(læring_total ~ treatment + pre_afstand_total, data = df)
-summary(pre_learning_reg)
+engagement_pre_learning_reg <- lm(læring_total ~ treatment + pre_afstand_total, data = df)
+
+engagement_pre_learning_reg |>
+  saveRDS("engagement_pre_learning_reg.rds")
 
 
 # ANCOVA Robustness
@@ -189,10 +191,32 @@ summary(reg_trust) # More trust for the article
 # No trust (baseline model)
 summary(lm(læring_total ~ treatment + pre_afstand_total, data = df))
 
-# What happens then if we control for trust with learning?
-summary(lm(læring_total ~ treatment + Tillid + pre_afstand_total, data = df))
 
-# Trust DOES sap the difference between the two treatments, but it looks like it could have an effect
+
+# What happens then if we control for trust with learning?
+h3_robustness_trust <- lm(læring_total ~ treatment + Tillid + pre_afstand_total, data = df)
+
+# Export the robustness check
+modelsummary(
+  list(
+    "Robust.Eng" = h3_robustness_trust
+  ),
+  stars = TRUE,
+  fmt = 3,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  coef_map = c(
+    "(Intercept)" = "Konstant",
+    "treatmentchat bot" = "Chatbot",
+    "Tillid" = "Tillid",
+    "pre_afstand_total" = "Præ-treatment afstand"
+  ),
+  gof_map = c("nobs", "r.squared", "adj.r.squared"),
+  title = "Tillid og læring, kun for engagerede respondenter",
+  output = "regressions/h3_engagement_trust_outcome.tex"
+)
+
+# Trust does sap some difference between the two treatments, but it looks like it could have an effect
 
 # Trust explain learning?
 summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df)) # Without treatment, trust explains learning

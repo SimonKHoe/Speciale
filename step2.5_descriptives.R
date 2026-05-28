@@ -146,7 +146,7 @@ ggplot(pre_summary, aes(x = parti |> fct_reorder(desc(mean_afstand)),
   labs(
     y = "Gennemsnitlig afstand til ekspertplacering"
   ) +
-  theme_simon(base_size = 14) +
+  theme_simon(base_size = 12) +
   theme(
     axis.title.x = element_blank()
   ) +
@@ -205,7 +205,7 @@ pre_points <-
   labs(y = "Præ-afstand",
        shape = "Treatment",
        color = "Treatment") +
-  theme_simon(base_size = 14) +
+  theme_simon(base_size = 12) +
   scale_color_manual(values = c(
     "chat bot" = "#000000",
     "artikel"  = "#A3A3A3"
@@ -215,7 +215,8 @@ pre_points <-
     "artikel"  = 16
   )) +
   theme(
-    axis.title.x = element_blank()
+    axis.title.x = element_blank(),
+    legend.position = "bottom"
   )
 
 
@@ -318,7 +319,7 @@ læring_bar <-
   theme_simon(base_size = 14) +
   theme(
     axis.title.x = element_blank(),
-    axis.title.y = element_blank()
+    axis.title.y = element_blank(),
   )
 
 
@@ -388,7 +389,7 @@ læring_dotwhisker <-
     color = "Treatment",
     shape = "Treatment"
   ) +
-  theme_simon(base_size = 14) +
+  theme_simon(base_size = 12) +
   scale_color_manual(values = c(
     "chat bot" = "#000000",
     "artikel"  = "#A3A3A3"
@@ -412,7 +413,7 @@ pre_og_læring_patchwork <-
 # Export patchwork
 ggsave("pre_og_læring_patch.pdf",
        plot = pre_og_læring_patchwork,
-       height = 6,
+       height = 7,
        width = 6
 )
 
@@ -952,7 +953,7 @@ sampling_viz <-
                        læring for perioden inden for hvert treatment.
                        10 outliers er uden for det plottede område.", 50)
   ) +
-  theme_simon(base_size = 15) +
+  theme_simon(base_size = 12) +
   scale_color_manual(values = c(
     "chat bot" = "#000000",
     "artikel"  = "#A3A3A3"

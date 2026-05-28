@@ -14,6 +14,7 @@ library(tidyr)
 library(dotwhisker)
 library(ggeffects)
 library(ggthemes)
+library(modelsummary)
 
 #### Load data ####
 df_analysis <-
@@ -55,6 +56,10 @@ df_chat_bot <-
 
 robust_learning_reg <- lm(læring_robust_sf ~ treatment + pre_afstand_total, data = df)
 
+# Export for joined H1 table
+robust_learning_reg |>
+  saveRDS("robust_learning_reg_sf.rds")
+
 ## Plot and regression pipe ##
 
 # Count n observations pr. treatment in the df
@@ -85,7 +90,7 @@ p_pred <-
   geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.08) +
   geom_hline(yintercept = 0, alpha = 0.8) +
   scale_x_discrete(labels = labels_vec) +
-  theme_tufte(base_size = 14) +
+  theme_simon(base_size = 12) +
   labs(title = "Forudsagt læring for de to treatmenttyper") +
   theme(
     axis.title.y = element_blank(),
@@ -96,16 +101,32 @@ p_pred <-
 
 p_pred
 
+ggsave("sf_robusthed.pdf",
+       plot = p_pred,
+       height = 5,
+       width = 6)
+
+## Excluding everyone before prompt fix ##
+exclude_robustness <-
+  lm(læring_total ~ treatment + pre_afstand_total, data = df_failed |> filter(after_cutoff == "after"))
+
+# Export for joined H1
+exclude_robustness |>
+  saveRDS("exclude_robustness.rds")
 
 ## Robustness - add sourcing period to reg ##
 
 robust_learning_reg_source <- lm(læring_total ~ treatment + pre_afstand_total + source_prompt, data = df_failed)
 
-summary(robust_learning_reg_source)
+# Export for joined H1 table
+robust_learning_reg_source |>
+  saveRDS("robust_learning_reg_source.rds")
 
-robust_learning_reg_source_2 <- lm(læring_total ~ treatment + pre_afstand_total, data = df_failed |> filter(source_prompt != "Før fix af prompt - personlige opslag"))
 
-summary(robust_learning_reg_source_2)
+# robust_learning_reg_source_2 <- lm(læring_total ~ treatment + pre_afstand_total, data = df_failed |> filter(source_prompt != "Før fix af prompt - personlige opslag"))
+
+
+
 
 # Tæl de to grupper i regressionen
 df_failed |>
@@ -119,14 +140,40 @@ df_failed$source_prompt |> table()
 # Check attention check influence
 robust_learning_reg_source <- lm(læring_total ~ treatment + pre_afstand_total, data = df)
 
-summary(lm(læring_total ~ treatment + attention_check_dummy + pre_afstand_total, data = df))
+h1_attention_reg <- lm(læring_total ~ treatment + attention_check_dummy + pre_afstand_total, data = df)
 
-summary(lm(attention_check_dummy ~ treatment + pre_afstand_total, data = df))
+# Export for joined h1 table
+h1_attention_reg |>
+  saveRDS("h1_attention_reg.rds")
+
+attention_pred <- lm(attention_check_dummy ~ treatment + pre_afstand_total, data = df)
+
+modelsummary(
+  list(
+    "Opmærksomhedstjek" = attention_pred
+  ),
+  stars = TRUE,
+  fmt = 3,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  coef_map = c(
+    "(Intercept)" = "Konstant",
+    "treatmentchat bot" = "Chatbot",
+    "pre_afstand_total" = "Præ-treatment afstand"
+  ),
+  gof_map = c(
+    "nobs",
+    "r.squared",
+    "adj.r.squared"
+  ),
+  title = "Sandsynlighed for korrekt emneidentifikation",
+  output = "regressions/attention_check.tex"
+)
 
 
 # Attention check source prompt
 attention_check_2 <- lm(læring_total ~ treatment + pre_afstand_total + source_prompt + attention_check_dummy, data = df_failed)
 
-summary(lm(attention_check_dummy ~ treatment + pre_afstand_total + source_prompt, data = df_failed))
+# Export attention check reg
 
-summary(attention_check_2)
+

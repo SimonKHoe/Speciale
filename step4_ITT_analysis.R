@@ -40,57 +40,6 @@ df <- df_cutoff_filtered
 # df <- df_failed
 
 
-# # THIS DEFINES THE FILTERED/LATE DF
-#
-# ### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS ### TODO: STREAMLINE
-# # Create a table in long format for each round of conversations
-# conversation_table <- map2_dfr(
-#   df$LUCIDUserFacingHistory,
-#   seq_len(nrow(df)),
-#   \(txt, id) {
-#     tibble(raw = txt, conv_id = id) %>%
-#       mutate(turns = str_split(
-#         raw,
-#         "\\s*(?=\\[(?:assistant|user)\\]:)",
-#         simplify = FALSE
-#       )) %>%
-#       unnest(turns) %>%
-#       filter(turns != "") %>%
-#       mutate(
-#         turn_order = row_number(),
-#         role = str_extract(turns, "(?<=\\[)(assistant|user)(?=\\]:)"),
-#         content = str_remove(turns, "^\\[(?:assistant|user)\\]:\\s*")
-#       ) %>%
-#       select(conv_id, turn_order, role, content)
-#   }
-# )
-#
-# # Join df tilbage på, og lav interaktionsvariable
-# conversation_table_joined <-
-#   conversation_table |>
-#   left_join(df, by = "conv_id")
-#
-# # Index on regression granularity
-# max_turn <-
-#   conversation_table_joined |>
-#   group_by(conv_id) |>
-#   slice_max(turn_order, n = 1) |>
-#   ungroup() |>
-#   select(conv_id, turn_order) |>
-#   rename(max_turn = turn_order)
-#
-# df_hyp_2 <- # Left joins max turns back onto OG df
-#   df |>
-#   left_join(max_turn)
-#
-# # Turn df_hyp_2 (joined max_turns) into the new df
-# df <- ### THIS IS THE FILTER DF - ENGAGEMENT V. ENGAGEMENT
-#   df_hyp_2 |>
-#   filter(max_turn != 1 | is.na(max_turn)) |>  # Now we can filter out 1-turn chat bot interactions by keeping bigger than 1 or NA (article)
-
-
-#### ####
-
 #### HYPOTHESIS 1 ####
 # Test whether the two treatments actually taught them something statistically different from 0
 df_article <- # Filtered to the article for t-test
@@ -115,8 +64,17 @@ t.test(læring_total ~ treatment, data = df)
 # Bivariate
 h1_bivariate <- lm(læring_total ~ treatment, data = df)
 
+# Export for joined h1 table
+h1_bivariate |>
+  saveRDS("h1_bivariate.rds")
+
 # Pre-learning control
 h1_pre_learning_reg <- lm(læring_total ~ treatment + pre_afstand_total, data = df)
+
+# Export for joined h1 table
+h1_pre_learning_reg |>
+  saveRDS("h1_pre_learning_reg.rds")
+
 summary(h1_pre_learning_reg)
 
 # Create modelsummary for the two
@@ -173,17 +131,18 @@ labels_vec <- setNames(
 )
 
 p_pred <-
-  ggplot(pred_df, aes(x = treatment, y = fit)) +
+  ggplot(pred_df, aes(x = treatment, y = fit, shape = treatment)) +
   geom_point(size = 2.5) +
   geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.08) +
   geom_hline(yintercept = 0, alpha = 0.8) +
   scale_x_discrete(labels = labels_vec) +
-  theme_simon(base_size = 14) +
-  labs(
-       # title = "Forudsagt læring for de to treatmenttyper, kontrolleret for præ-placeringer",
-       y = "Forudsagt læring") +
+  scale_shape_manual(
+    values = c("artikel" = 16, "chat bot" = 17),
+    guide = "none"
+  ) +
+  theme_simon(base_size = 12) +
+  labs(y = "Forudsagt læring") +
   theme(
-#    axis.title.y = element_blank(),
     axis.ticks.x = element_blank(),
     axis.title.x = element_blank(),
     title = element_text(hjust = 0.5)
@@ -194,9 +153,6 @@ p_pred
 ggsave("h1_læring_plot.pdf",
        plot = p_pred,
        width = 6, height = 5)
-
-
-## Robustness ##
 
 
 
@@ -211,68 +167,119 @@ df |>
   facet_wrap(~treatment)
 
 # LM for trust?
-reg_trust <-
-  lm(Tillid ~ treatment, data = df_analysis)
+h3_trust_outcome <- lm(Tillid ~ treatment, data = df)
+summary(h3_trust_outcome)
+
+# Export the LM for trust
+modelsummary(
+  list(
+    "Tillid" = h3_trust_outcome
+  ),
+  stars = TRUE,
+  fmt = 3,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  coef_map = c(
+    "(Intercept)" = "Konstant",
+    "treatmentchat bot" = "Chatbot"
+  ),
+  title = "Tillid forklaret ved treatment",
+  gof_map = c("nobs", "r.squared", "adj.r.squared"),
+  output = "regressions/h3_trust_outcome.tex"
+)
 
 # There is a significant difference in trust between the two information sources
 
-summary(reg_trust) # More trust for the article
-
 # No trust (baseline model)
-summary(lm(læring_total ~ treatment + pre_afstand_total, data = df))
-
-# What happens then if we control for trust with learning?
-summary(lm(læring_total ~ treatment + Tillid + pre_afstand_total, data = df))
-
-# Trust DOES sap the difference between the two treatments, but it looks like it could have an effect
+h3_baseline <- lm(læring_total ~ treatment + pre_afstand_total, data = df)
 
 # Trust explain learning?
-summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df)) # Without treatment, trust explains learning
+h3_trust_only <- lm(læring_total ~  Tillid + pre_afstand_total, data = df)
+summary(h3_trust_only) # Without treatment, trust explains learning
+
+# What happens then if we control for trust with learning?
+h3_trust_main <- lm(læring_total ~ treatment + Tillid + pre_afstand_total, data = df)
+summary(h3_trust_main)
+
+# Trust doees not sap the difference between the two treatments, but it looks like it could have an effect
 
 # Trust explain learning for CB vs. artikel
-summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df |> filter(treatment == "chat bot")))
-summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df |> filter(treatment == "artikel")))
+h3_chat_bot <- lm(læring_total ~ Tillid + pre_afstand_total, data = df |> filter(treatment == "chat bot"))
+h3_article <- lm(læring_total ~ Tillid + pre_afstand_total, data = df |> filter(treatment == "artikel"))
 
 # Interaktion
-summary(lm(læring_total ~ Tillid * treatment + pre_afstand_total, data = df))
+h3_interaktion <- lm(læring_total ~ Tillid * treatment + pre_afstand_total, data = df)
+summary(h3_interaktion)
 
-summary(lm(læring_total ~ treatment + pre_afstand_total, data = df |> filter(Tillid > 4)))
-# We lack power for the interaction - but could also be that it isn't there
+# MODELSUMMARY THE REGRESSIONS #
+modelsummary(
+  list(
+    "Baseline" = h3_baseline,
+    "Tillid" = h3_trust_only,
+    "Tillid + treatment" = h3_trust_main
+  ),
+  stars = TRUE,
+  fmt = 3,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  coef_map = c(
+    "(Intercept)" = "Konstant",
+    "treatmentchat bot" = "Chatbot",
+    "Tillid" = "Tillid",
+    "pre_afstand_total" = "Præ-treatment afstand",
+    "Tillid:treatmentchat bot" = "Tillid × chatbot"
+  ),
+  title = "Tillid og læring",
+  gof_map = c("nobs", "r.squared", "adj.r.squared"),
+  output = "regressions/h3_regressions_main.tex"
+)
 
-# Let's check the effects of trust inside cb group
-summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df))
+modelsummary(
+  list(
+    "Chatbotbrugere" = h3_chat_bot,
+    "Artikelbrugere" = h3_article,
+    "Tillid × treatment" = h3_interaktion
+  ),
+  stars = TRUE,
+  fmt = 3,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  coef_map = c(
+    "(Intercept)" = "Konstant",
+    "treatmentchat bot" = "Chatbot",
+    "Tillid" = "Tillid",
+    "pre_afstand_total" = "Præ-treatment afstand",
+    "Tillid:treatmentchat bot" = "Tillid × chatbot"
+  ),
+  title = "Tillid og læring, splittet på treatments og interaktion",
+  gof_map = c("nobs", "r.squared", "adj.r.squared"),
+  output = "regressions/h3_regressions_split.tex"
+)
+
 
 # ANCOVA Robustness
 summary(lm(post_afstand_total ~ treatment + Tillid + pre_afstand_total, data = df))
 
-# Interaction
-summary(lm(læring_total ~ treatment*Tillid + pre_afstand_total, data = df))
-# The difference between the treatments isn't conditioned by the level of trust, it is trust itself that has effect
-
-
-# What happens if we only regress Learning on trust for chat bot
-summary(lm(læring_total ~ Tillid, data = df |> filter(treatment == "chat bot")))
-
-
-
 #### HYPOTESE 4 ####
 
-summary(lm(post_viden ~ subjektiv_forståelse, data = df))
+h4_bivariate <- lm(post_viden ~ subjektiv_forståelse, data = df)
+summary(h4_bivariate)
 # There is a relationship between how much you think you understand and how much you actually understand
 
-summary(lm(post_viden ~ subjektiv_forståelse, data = df |> filter(treatment == "chat bot")))
+h4_chat_bot <- lm(post_viden ~ subjektiv_forståelse, data = df |> filter(treatment == "chat bot"))
+summary(h4_chat_bot)
 
-summary(lm(post_viden ~ subjektiv_forståelse, data = df |> filter(treatment == "artikel")))
+h4_article <- lm(post_viden ~ subjektiv_forståelse, data = df |> filter(treatment == "artikel"))
+summary(h4_article)
 
 # The relationship is only existant for the article  - try interaction
-summary(lm(post_viden ~ subjektiv_forståelse * treatment, data = df))
+h4_interaction <- lm(post_viden ~ subjektiv_forståelse * treatment, data = df)
+summary(h4_interaction)
 
 # Plot the interaction
 
-model_h4 <- lm(post_viden ~ subjektiv_forståelse * treatment, data = df)
-
 pred_interaction_h4 <- ggpredict(
-  model_h4,
+  h4_interaction,
   terms = c("subjektiv_forståelse [all]", "treatment")
 )
 
@@ -282,11 +289,16 @@ h4_interaktion <-
   geom_line(linewidth = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
               alpha = 0.04, color = NA) +
-  geom_hline(
-    yintercept = mean(df$post_viden, na.rm = TRUE),
+  geom_segment(
+    aes(
+      x = min(pred_interaction_h4$x),
+      xend = max(pred_interaction_h4$x),
+      y = mean(df$post_viden, na.rm = TRUE),
+      yend = mean(df$post_viden, na.rm = TRUE)
+    ),
     linetype = "dashed",
     colour = "black",
-    alpha = 0.4
+    alpha = 0.3
   ) +
   labs(
     x = "Subjektiv forståelse",
@@ -294,7 +306,7 @@ h4_interaktion <-
     color = "Informationskilde",
     fill = "Informationskilde",
     caption = str_wrap(
-      "Note: Forudsagte værdier baseret på lineær regression med 95% konfidensintervaller.",
+      "Note: Forudsagte værdier baseret på lineær regression med 95% konfidensintervaller. Den stiplede linje indikerer det gennemsnitlige vidensniveau i samplen.",
       width = 45
     )
   ) +
@@ -306,7 +318,7 @@ h4_interaktion <-
     values = c("#0072B2", "#D55E00"),
     labels = c("Artikel", "Chat bot")
   ) +
-  theme_simon(base_size = 14, caption_size = 11) +
+  theme_simon(base_size = 12) +
   theme(
     plot.caption = element_text(margin = margin(t = 25)),
     legend.position = "bottom"
@@ -320,6 +332,29 @@ ggsave("h4_interaktion.pdf",
        )
 
 
+### MODELSUMMARY OF THE REGRESSIONS ###
+modelsummary(
+  list(
+    "Bivariat" = h4_bivariate,
+    "Chatbotbrugere" = h4_chat_bot,
+    "Aritkelbrugere" = h4_article,
+    "Interaktion" = h4_interaction
+  ),
+  stars = TRUE,
+  fmt = 3,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  coef_map = c(
+    "(Intercept)" = "Konstant",
+    "subjektiv_forståelse" = "Subjektiv forståelse",
+    "treatmentchat bot" = "Chatbot",
+    "subjektiv_forståelse:treatmentchat bot" = "Subjektiv forståelse × chatbot"
+  ),
+  title = "Sammenhængen mellem subjektiv forståelse og viden",
+  gof_map = c("nobs", "r.squared", "adj.r.squared"),
+  output = "regressions/h4_regressions.tex"
+)
+
 # Marginal difference plot
 # vælg punkter langs x
 em <- emmeans(
@@ -332,7 +367,6 @@ em <- emmeans(
 diffs <- contrast(em, method = "revpairwise")
 
 summary(diffs)
-
 
 diffs_df <- as.data.frame(summary(diffs, infer = TRUE))
 names(diffs_df)
@@ -352,7 +386,26 @@ ggplot(diffs_df, aes(x = subjektiv_forståelse, y = estimate)) +
 # Do chat bot users overestimate theselves?
 df$overconfidence <- scale(df$subjektiv_forståelse) - scale(df$post_viden)
 
-summary(lm(overconfidence ~ treatment, data = df))
+h4_overconfidence <- lm(overconfidence ~ treatment, data = df)
+
+## EXPORT THE REG ##
+
+modelsummary(
+  list(
+    "Overkonfidens" = h4_overconfidence
+  ),
+  stars = TRUE,
+  fmt = 3,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  coef_map = c(
+    "(Intercept)" = "Konstant",
+    "treatmentchat bot" = "Chatbot"
+  ),
+  title = "Sammenhængen mellem overkonfidens og treatment",
+  gof_map = c("nobs", "r.squared", "adj.r.squared"),
+  output = "regressions/h4_overkonfidens.tex"
+)
 
 # Dumbbell plot #
 dumbbell_plot_h4 <-
@@ -382,7 +435,7 @@ dumbbell_plot_h4 <-
       color = "Post-viden",
       shape = treatment
     ),
-    size = 3.5
+    size = 4
   ) +
 
   geom_point(
@@ -392,7 +445,7 @@ dumbbell_plot_h4 <-
       color = "Subjektiv forståelse",
       shape = treatment
     ),
-    size = 3.5
+    size = 4
   ) +
 
   scale_color_manual(
@@ -403,23 +456,47 @@ dumbbell_plot_h4 <-
     )
   ) +
 
-  guides(shape = "none") +
+  scale_shape_manual(
+    name = NULL,
+    values = c(
+      "artikel" = 16,
+      "chat bot" = 17
+    ),
+    labels = c(
+      "artikel" = "Artikel",
+      "chat bot" = "Chatbot"
+    )
+  ) +
+
   labs(x = "Z-Standardiseret niveau",
 #       y = "Treatment",
        caption = str_wrap("Note: Højere værdier angiver relativt højere subjektiv forståelse eller
        post_viden sammenlignet med samplets gennemsnit", 45)
        ) +
-  theme_simon(base_size = 14, ticks = FALSE) +
+  theme_simon(base_size = 12, ticks = FALSE) +
   theme(legend.position = "bottom",
+        legend.box = "vertical",
+        legend.spacing.y = unit(0, "cm"),
         plot.caption = element_text(margin = margin(t = 15)),
         axis.title.x = element_text(margin = margin(t = 15)),
         axis.title.y = element_blank()
-        )
+        ) +
+    guides(
+      color = guide_legend(
+        order = 1,
+        override.aes = list(shape = 15, size = 3.5)
+      ),
+      shape = guide_legend(
+        order = 2,
+        override.aes = list(color = "black", size = 3.5)
+      )
+    )
 
 ggsave("dumbbell_plot_h4.pdf",
        plot = dumbbell_plot_h4,
        height = 5,
        width = 6)
+
 
 
 
