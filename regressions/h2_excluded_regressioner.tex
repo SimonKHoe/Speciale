@@ -1,0 +1,29 @@
+\begin{table}
+\centering
+\begin{talltblr}[         %% tabularray outer open
+caption={Logged interaktion og læring i chatbotbetingelsen},
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]Q[]Q[]Q[]},
+column{2,3,4,5}={}{halign=c,},
+column{1}={}{halign=l,},
+hline{12}={1,2,3,4,5}{solid, black, 0.05em},
+}                     %% tabularray inner close
+\toprule
+& Bivariat & Kontrol for præ-afstand & Kontrol for tekstmængde & Interaktion \\ \midrule %% TinyTableHeader
+Konstant                         & \num{0.264}*** & \num{-0.587}*** & \num{-0.582}*** & \num{-0.626}*** \\
+& (\num{0.052})  & (\num{0.116})   & (\num{0.127})   & (\num{0.127})   \\
+Interaktionsniveau               & \num{-0.011}   & \num{-0.012}    & \num{-0.005}    & \num{0.067}     \\
+& (\num{0.060})  & (\num{0.048})   & (\num{0.092})   & (\num{0.097})   \\
+Præ-treatment afstand            &                 & \num{0.484}***  & \num{0.484}***  & \num{0.491}***  \\
+&                 & (\num{0.062})   & (\num{0.062})   & (\num{0.061})   \\
+Tekstmængde (standardiseret)     &                 &                  & \num{-0.008}    & \num{0.098}     \\
+&                 &                  & (\num{0.087})   & (\num{0.099})   \\
+Interaktionsniveau × tekstmængde &                 &                  &                  & \num{-0.084}*   \\
+&                 &                  &                  & (\num{0.039})   \\
+Num.Obs.                         & \num{114}      & \num{114}       & \num{114}       & \num{114}       \\
+R2                               & \num{0.000}    & \num{0.357}     & \num{0.357}     & \num{0.383}     \\
+R2 Adj.                          & \num{-0.009}   & \num{0.345}     & \num{0.339}     & \num{0.360}     \\
+\bottomrule
+\end{talltblr}
+\end{table}
