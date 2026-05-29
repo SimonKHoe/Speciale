@@ -42,22 +42,6 @@ df <- df_cutoff_filtered
 
 #### Descriptives ####
 
-### Balance test ###
-# balance_pre <- lm(pre_afstand_total ~ treatment, data = df)
-#
-# balance_sof <- lm(folketing_dummy ~ treatment, data = df)
-#
-# modelsummary(
-#   list(
-#     "Pre-treatment afstand" = balance_pre,
-#     "Politisk sofistikation" = balance_sof
-#   ),
-#   statistic = "({std.error})",
-#   stars = TRUE,
-#   gof_omit = "AIC|BIC|Log|Adj|F|RMSE",
-#   output = "balance_table.tex"
-# )
-
 balance_tab <- tibble(
   Variabel = c("Præ-treatment afstand", "Politisk sofistikation"),
 
@@ -152,14 +136,7 @@ ggplot(pre_summary, aes(x = parti |> fct_reorder(desc(mean_afstand)),
   ) +
   scale_y_continuous(breaks = seq(0, 2.5, by = 0.5), limits = c(0, 2.8))
 
-# # Export pre bar
-# ggsave("pre_bar.pdf",
-#        plot = pre_bar,
-#        width = 6,
-#        height = 6)
-
-# Pre dot
-
+# Split in treatments
 party_order <- pre_summary |>
   group_by(parti) |>
   summarise(mean_pre = mean(mean_afstand), .groups = "drop") |>
@@ -587,6 +564,7 @@ ggsave("appendix_a/problemer_chat_bot.pdf",
        height = 4,
        width = 6)
 
+# Plot the single select issues question
 problemer_chat_bot_single <-
   df |>
   filter(!is.na(Q7)) |>
@@ -607,7 +585,7 @@ ggsave("problemer_chat_bot_single.pdf",
        width = 6)
 
 
-# Visualize the text answers
+# Visualize the chatbot issues text answers
 df_quotes <- df |>
   filter(!is.na(Q8_5_TEXT), Q8_5_TEXT != "") |>
   mutate(
@@ -704,7 +682,7 @@ time_spent_treatments <-
   geom_boxplot() +
   theme_simon(base_size = 14, ticks = FALSE) +
   labs(
-    title = "Fordelingen af tid brugt mellem de to treatments med outliers",
+    title = str_wrap("Fordelingen af tid brugt mellem de to treatments med outliers", 35),
        y = "Tid brugt på survey i minutter",
        x = "Treatment",
 #       caption = str_wrap("Bemærk at y-aksen er trunkeret. 15 observationer er udenfor det plottede område", 45)
@@ -726,7 +704,8 @@ ggsave("appendix_a/time_spent_treatments_untruncated.pdf",
 
 # Læring #
 # visualize differences in learning using box plots
-df |>
+læring_box <-
+  df |>
   ggplot(aes(x = treatment, y = læring_total)) +
   geom_boxplot() +
   theme_simon(base_size = 14, ticks = FALSE) +
@@ -737,6 +716,38 @@ df |>
         axis.title.x = element_text(margin = margin(t = 15)),
         axis.title.y = element_text(margin = margin(r = 15)))
 
+ggsave("læring_box.pdf",
+       plot = læring_box,
+       height = 5,
+       width = 6)
+
+# Læring histogram
+læring_hist <-
+  df |>
+  ggplot(aes(x = læring_total)) +
+  geom_histogram(
+    bins = 30,
+    alpha = 0.7
+  ) +
+  geom_vline(xintercept = 0) +
+  theme_simon(base_size = 14, ticks = FALSE) +
+  labs(
+    title = "Fordelingen af læring i samplen",
+    x = "Samlet læring",
+    y = "Antal respondenter"
+  ) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 15)),
+    axis.title.y = element_text(margin = margin(r = 15))
+  )
+
+ggsave(
+  "læring_hist.pdf",
+  plot = læring_hist,
+  height = 5,
+  width = 6
+)
+
 # Tillid #
 
 # Samlet
@@ -744,29 +755,31 @@ tillid_bar <-
   df |>
   mutate(
     Tillid = as_factor(Tillid),
-    Tillid = fct_recode(Tillid,
-                        'Meget utroværdig' = '1',
-                        'Utroværdig' = '2',
-                        'Hverken troværdig eller utroværdig' = '3',
-                        'Troværdig' = '4',
-                        'Meget troværdig' = '5'
+    Tillid = fct_recode(
+      Tillid,
+      'Meget utroværdig' = '1',
+      'Utroværdig' = '2',
+      'Hverken troværdig eller utroværdig' = '3',
+      'Troværdig' = '4',
+      'Meget troværdig' = '5'
     )
   ) |>
   ggplot(aes(x = Tillid)) +
-  geom_bar() +
-  labs(
-    title = "Fordelingen af tillid i hele samplen, absolutte tal",
-    x = "Hvor troværdig synes du, at den information du har fået fra [Treatment] er?, på en skala fra 1-5"
-    # ,caption = str_wrap(
-    #   "Note: Respondenterne har svaret på spørgsmålet: 'Hvor troværdig synes du, at den information du har fået fra [Treatment] er?'",
-    #   60)
+  geom_bar(
+    aes(y = after_stat(prop), group = 1)
   ) +
-  theme_simon(base_size = 14) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(
+    title = "Fordelingen af tillid i hele samplen, procent",
+    x = "Hvor troværdig synes du, at den information du har fået fra [Treatment] er?, på en skala fra 1-5"
+  ) +
+  theme_simon(base_size = 12) +
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
     panel.spacing = unit(1.5, "cm")
-  )
+  ) +
+  scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 5))
 
 
 # Facetteret
@@ -774,26 +787,30 @@ tillid_bar_facet <-
   df |>
   mutate(
     Tillid = as_factor(Tillid),
-    Tillid = fct_recode(Tillid,
-                        'Meget utroværdig' = '1',
-                        'Utroværdig' = '2',
-                        'Hverken troværdig eller utroværdig' = '3',
-                        'Troværdig' = '4',
-                        'Meget troværdig' = '5'
+    Tillid = fct_recode(
+      Tillid,
+      'Meget utroværdig' = '1',
+      'Utroværdig' = '2',
+      'Hverken troværdig eller utroværdig' = '3',
+      'Troværdig' = '4',
+      'Meget troværdig' = '5'
     )
   ) |>
   ggplot(aes(x = Tillid)) +
-  geom_bar() +
+  geom_bar(
+    aes(y = after_stat(prop), group = 1)
+  ) +
   facet_wrap(~ treatment, axes = "all_y") +
-  scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 10)) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 5)) +
   labs(
-    title = "Fordelingen af tillid til de to treatmentkilder, absolutte tal",
+    title = "Fordelingen af tillid til de to treatmentkilder, procent",
     x = "Hvor troværdig synes du, at den information du har fået fra [Treatment] er?, på en skala fra 1-5",
     caption = str_wrap(
       "Note: Respondenterne har svaret på spørgsmålet: 'Hvor troværdig synes du, at den information du har fået fra [Treatment] er?'",
       60)
   ) +
-  theme_simon(base_size = 14) +
+  theme_simon(base_size = 12) +
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
@@ -801,49 +818,88 @@ tillid_bar_facet <-
     plot.caption = element_text(margin = margin(t = 40))
   )
 
-tillid_bar / tillid_bar_facet
 
-## PROMPT FIX ##
+patch_tillid <- tillid_bar / tillid_bar_facet
 
-# RDD PLOT prompt fix #
+ggsave("patch_tillid.pdf",
+       plot = patch_tillid,
+       height = 7,
+       width = 7)
 
-# Df that includes the chat bot means for pre and post
-# means_df <- df_analysis |>
-#   mutate(after_cutoff = recode(after_cutoff,
-#                                'before' = 'før prompt fix',
-#                                'after' = 'efter prompt fix')) |>
-#   group_by(after_cutoff, treatment) |>
-#   summarise(
-#     mean_learning = mean(læring_total, na.rm = TRUE),
-#     .groups = "drop"
-#   )
 
-# # This can be run with df_analysis AND df_failed
-# df_failed |> # Needs to be the df version with both pre and post cutoff
-#   mutate(after_cutoff = recode(after_cutoff,
-#                                'before' = 'før prompt fix',
-#                                'after' = 'efter prompt fix')) |>
-#   ggplot(aes(x = StartDate_cph, y = læring_total, group = treatment)) +
-# #  geom_line(aes(color = treatment), linewidth = 0.8, alpha = 0.7) +
-#   geom_point(aes(color = treatment, shape = treatment), size = 2, alpha = 0.8) +
-#   #  geom_hline(yintercept = 0, linetype = "solid", linewidth = 1, alpha = 0.6) +
-#   geom_hline(
-#     data = means_df,
-#     aes(yintercept = mean_learning, color = treatment),
-#     linewidth = 1, linetype = "dashed"
-#   ) +
-#   facet_wrap(~after_cutoff, scales = "free_x") +
-#   labs(y = "Læring", x = "Tidspunkt / Dato") +
-#   theme_simon(base_size = 14) +
-#   scale_color_manual(values = c(
-#     "chat bot" = "#000000",
-#     "artikel"  = "#ABABAB"
-#   )) +
-#   theme(panel.spacing = unit(1, "cm"),
-#         axis.title.x = element_text(margin = margin(t = 15)),
-#         axis.title.y = element_text(margin = margin(r = 15)))
+# Subjektiv forståelse
+subjektiv_bar <-
+  df |>
+  mutate(
+    subjektiv_forståelse = as_factor(subjektiv_forståelse),
+    subjektiv_forståelse = fct_recode(
+      subjektiv_forståelse,
+      'Meget usikker' = '1',
+      'Usikker' = '2',
+      'Hverken sikker eller usikker' = '3',
+      'Sikker' = '4',
+      'Meget sikker' = '5'
+    )
+  ) |>
+  ggplot(aes(x = subjektiv_forståelse)) +
+  geom_bar(
+    aes(y = after_stat(prop), group = 1)
+  ) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(
+    title = "Fordelingen af subjektiv forståelse i hele samplen, procent"
+  ) +
+  theme_simon(base_size = 12) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.spacing = unit(1.5, "cm")
+  ) +
+  scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 5))
 
-# Let's look at the political sofistication var - I'm expecting it to be useless
+
+# Facetteret
+subjektiv_bar_facet <-
+  df |>
+  mutate(
+    subjektiv_forståelse = as_factor(subjektiv_forståelse),
+    subjektiv_forståelse = fct_recode(subjektiv_forståelse,
+                        'Meget usikker' = '1',
+                        'Usikker' = '2',
+                        'Hverken sikker eller usikker' = '3',
+                        'Sikker' = '4',
+                        'Meget sikker' = '5'
+    )
+  ) |>
+  ggplot(aes(x = subjektiv_forståelse)) +
+  geom_bar(aes(y = after_stat(prop),
+               group = 1)) +
+  facet_wrap(~ treatment, axes = "all_y") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(
+    title = "Fordelingen af subjektiv forståelse ved de to treatmentkilder, procent",
+    caption = str_wrap(
+      "Note: Respondenterne har svaret på spørgsmålet: 'Hvor sikker er du på, at dine nye placeringer er korrekte?'",
+      60)
+  ) +
+  theme_simon(base_size = 12) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.spacing = unit(1.5, "cm"),
+    plot.caption = element_text(margin = margin(t = 40))
+  ) +
+  scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 5))
+
+patch_subjektiv <- subjektiv_bar / subjektiv_bar_facet
+
+ggsave("patch_subjektiv.pdf",
+       plot = patch_subjektiv,
+       height = 7,
+       width = 7)
+
+
+# Let's look at the political sophistication var
 df_failed |>
   ggplot(aes(x = partier_folketing, y = after_stat(prop), group = 1)) +
   geom_bar() +
@@ -869,7 +925,6 @@ df_failed |>
   scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 15))
 
 
-
 ## SOURCE_PROMPT ##
 
 # Line chart #
@@ -880,41 +935,6 @@ means_df_2 <- df_failed |>
     mean_learning = mean(læring_total, na.rm = TRUE),
     .groups = "drop"
   )
-
-# This can be run with df_analysis AND df_failed
-#sampling_viz <-
-#   df_failed |> # Needs to be the df version with both pre and post cutoff
-#   ggplot(aes(x = StartDate_cph, y = læring_total, group = treatment)) +
-# #  geom_line(aes(color = treatment), linewidth = 0.8, alpha = 0.3) +
-#   geom_point(aes(color = treatment, shape = treatment), size = 2, alpha = 0.35) +
-#   #  geom_hline(yintercept = 0, linetype = "solid", linewidth = 1, alpha = 0.6) +
-#   geom_hline(
-#     data = means_df_2,
-#     aes(yintercept = mean_learning, color = treatment),
-#     linewidth = 1, linetype = "longdash"
-#   ) +
-#   facet_wrap(~source_prompt, scales = "free_x",
-#              labeller = labeller(source_prompt = label_wrap_gen(width = 20))) +
-#   labs(y = "Læring", x = "Tidspunkt / Dato",
-#   # title = "Den gennemsnitlige læring for de to treatmenttyper,
-#   #      fordelt over de tre skelsættende indsamlingsperioder i projektet",
-#        caption = "Note: De stiplede linjer viser gennemsnittet af læring for perioden inden for hvert treatment.") +
-#   theme_simon(base_size = 14) +
-#   scale_color_manual(values = c(
-#     "chat bot" = "#000000",
-#     "artikel"  = "#A3A3A3"
-#   )) +
-#   theme(panel.spacing = unit(1, "cm"),
-#         axis.title.x = element_text(margin = margin(t = 15)),
-#         axis.title.y = element_text(margin = margin(r = 15)),
-#         axis.ticks.length = unit(2.5, "pt"),
-#         legend.position = "bottom") +
-#   scale_x_datetime(
-#     breaks = scales::breaks_pretty(n = 4),
-#     date_labels = "%d-%m\n%H:%M",
-#     guide = guide_axis(check.overlap = TRUE)
-#   )
-
 
 # V2
 facet_counts <- df_failed |> # Count n

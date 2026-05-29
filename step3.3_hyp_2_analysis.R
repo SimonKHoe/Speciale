@@ -620,15 +620,38 @@ ggsave("appendix_a/combined_histograms.pdf",
        width = 6,
        height = 5)
 
-
-### Line chart - what happened to chat bot interactions after prompt fix? ###
-means_df_3 <-
+# Visualize interaction level
+interaktion_hist <-
   df_hyp_2_2 |>
-  group_by(source_prompt) |>
-  summarise(
-    mean_learning = mean(interaction_index, na.rm = TRUE),
-    .groups = "drop"
+  filter(treatment == "chat bot") |>
+  ggplot(aes(x = interaction_index)) +
+  geom_histogram(
+    bins = 30,
+    alpha = 0.7
+  ) +
+  geom_vline(
+    xintercept = mean(df_hyp_2_2$interaction_index, na.rm = TRUE),
+    linetype = "dashed",
+    alpha = 0.7
+  ) +
+  theme_simon(base_size = 14, ticks = FALSE) +
+  labs(
+    title = str_wrap("Fordelingen af interaktionsniveau (z-transformeret og uden ekskludering)", 50),
+    x = "Interaktionsniveau",
+    y = "Antal respondenter"
+  ) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 15)),
+    axis.title.y = element_text(margin = margin(r = 15))
   )
+
+ggsave(
+  "interaktion_hist.pdf",
+  plot = interaktion_hist,
+  height = 5,
+  width = 6
+)
+
 
 
 

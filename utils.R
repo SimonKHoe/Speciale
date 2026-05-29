@@ -1,6 +1,9 @@
 ### Created on: 26.04.04 ###
 ### Last edited: 26.04.20 ###
 
+# NB! THIS UTLIS FILE IS NECESSARY TO RUN THE PLOTS THROUGHOUT THE PIPE.
+# IT DEFINES MY GGPLOT THEME
+
 # Setup
 library(dplyr)
 library(readr)
