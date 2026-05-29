@@ -117,5 +117,6 @@ df_analysis <-
 
 
 # Export the analysis ready df
+# Note: Filtering happens seperately in different scripts
 df_analysis |>
   saveRDS("df_analysis.rds")

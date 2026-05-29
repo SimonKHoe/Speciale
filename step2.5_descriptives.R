@@ -35,7 +35,7 @@ df_cutoff_filtered <-
 
 # Set df for the entire regression results viz section here
 # df <- df_analysis
-df <- df_cutoff_filtered
+df <- df_cutoff_filtered # This is the main group # 247
 # df <- df_failed
 
 #### ####
@@ -924,6 +924,25 @@ df_failed |>
   ) +
   scale_x_discrete(labels = \(x) stringr::str_wrap(x, width = 15))
 
+# Sophistication
+sofistikation_bar <-
+  df |>
+  ggplot(aes(x = partier_folketing, y = after_stat(prop), group = 1)) +
+  geom_bar(width = 0.5) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_discrete(drop = FALSE) +
+  theme_tufte(base_size = 14) +
+  labs(title = str_wrap("Andel af respondentsvar til, hvor mange sæder, der er i Folketinget", 35),
+                        y = "Andel", x = "Svarmuligheder",) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 15)),
+    axis.title.y = element_text(margin = margin(r = 15)))
+
+
+ggsave("appendix_a/sofistikation_bar.pdf",
+       plot = sofistikation_bar,
+       height = 5,
+       width = 6)
 
 ## SOURCE_PROMPT ##
 

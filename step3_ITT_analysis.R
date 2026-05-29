@@ -21,11 +21,9 @@ df_analysis <-
   read_rds("df_analysis.rds") |>
   mutate(conv_id = row_number())
 
-# Define the df with the failed interactions filtered and manipulation check
+# Define the df with the failed interactions
 df_failed <- # THis becomes ITT
   df_analysis |>
-#  filter(Q8_1 == 0 | is.na(Q8_1)) |>
-#  filter(partier_folketing == "179") |>
   filter(Progress > 75) # Remove people who haven't done post-placements
 
 # Define a df where cutoff is introduced
@@ -35,9 +33,11 @@ df_cutoff_filtered <-
   mutate(conv_id = row_number())
 
 # THIS IS THE ITT DF
+# You can run ITT results with different filters by adjusting here
 # df <- df_analysis
 df <- df_cutoff_filtered
 # df <- df_failed
+
 
 
 #### HYPOTHESIS 1 ####
@@ -157,14 +157,6 @@ ggsave("h1_læring_plot.pdf",
 
 
 #### HYPOTHESIS 3 ####
-
-# Trust
-df |>
-  ggplot(aes(x = Tillid, y = læring_total)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = TRUE) +
-  theme_minimal() +
-  facet_wrap(~treatment)
 
 # LM for trust?
 h3_trust_outcome <- lm(Tillid ~ treatment, data = df)
@@ -498,8 +490,6 @@ ggsave("dumbbell_plot_h4.pdf",
        width = 6)
 
 
-
-
 # Test whether over/underconfidence can be attributed to each group
 # Create z_subjektiv_post
 df_h4 <-
@@ -516,14 +506,6 @@ t.test(
   df_h4$z_subjektiv_post[df_h4$treatment == "chat bot"],
   mu = 0
 )
-
-# # Visualize the correlation facetted
-# df |>
-#   ggplot(aes(y = post_viden, x = subjektiv_forståelse, groups = treatment)) +
-#   geom_point() +
-#   geom_smooth(method = "lm", se = TRUE) +
-#   theme_tufte(base_size = 14) +
-#   facet_wrap(~treatment, scales = "free_x")
 
 
 # Exploration
@@ -556,18 +538,5 @@ summary(lm(z_subjektiv_post ~ treatment, data = df_h4))
 #### HYPOTESE 5 ####
 
 # Let's look at the political sofistication var - I'm expecting it to be useless
-df |>
-  ggplot(aes(x = partier_folketing, y = after_stat(prop), group = 1)) +
-  geom_bar() +
-  scale_y_continuous(labels = scales::percent) +
-  scale_x_discrete(drop = FALSE) +
-  theme_tufte(base_size = 14) +
-  labs(title = "Andel af respondentsvar til, hvor mange sæder, der er i Folketinget", y = "Andel", x = "Svarmuligheder") +
-  theme(
-        axis.title.x = element_text(margin = margin(t = 15)),
-        axis.title.y = element_text(margin = margin(r = 15)))
-
-# It's useless, let's try to have a look at it anyway
-
 summary(lm(læring_total ~ partier_folketing + pre_afstand_total, data = df_analysis))
 

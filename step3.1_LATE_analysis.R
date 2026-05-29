@@ -43,7 +43,7 @@ df <- df_cutoff_filtered
 
 # THIS DEFINES THE LATE DF
 
-### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS ### TODO: STREAMLINE
+### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS
 # Create a table in long format for each round of conversations
 conversation_table <- map2_dfr(
   df$LUCIDUserFacingHistory,
@@ -214,16 +214,33 @@ plot_df <- bind_rows(itt_est, late_est)
 
 # Plot them together
 
-ggplot(plot_df, aes(x = model, y = estimate)) +
-  geom_point(size = 3) +
-  geom_errorbar(aes(ymin = estimate - 1.96*std.error,
-                    ymax = estimate + 1.96*std.error),
-                width = 0.1) +
+
+late_v_itt <-
+  plot_df |>
+  ggplot(aes(x = model, y = estimate)) +
+  geom_point(shape = 17, size = 3) +
+  geom_errorbar(
+    aes(
+      ymin = estimate - 1.96 * std.error,
+      ymax = estimate + 1.96 * std.error
+    ),
+    width = 0.1
+  ) +
   geom_hline(yintercept = 0, linetype = "dashed") +
   theme_simon(base_size = 14) +
   labs(
     x = "",
-    y = "Effekt på læring"
+    y = "Læring",
+    title = str_wrap(
+      "Chatbot treatment effekt på læring. Artikel treatment er referencegruppe.",
+      45
+    ),
+    caption = "Errorbars indikerer 95% konfidensintervaller."
   )
+
+ggsave("late_v_itt.pdf",
+        plot = late_v_itt,
+       height = 5,
+       width = 6)
 
 

@@ -33,15 +33,13 @@ df_cutoff_filtered <-
   filter((treatment == "chat bot" & after_cutoff == "after" | treatment == "artikel")) |>
   mutate(conv_id = row_number())
 
-# THIS IS THE ITT DF
+# THIS IS THE ITT DF - don't adjust - filter will further down
 # df <- df_analysis
 df <- df_cutoff_filtered
 # df <- df_failed
 
 
-# THIS DEFINES THE FILTERED/LATE DF
-
-### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS ### TODO: STREAMLINE
+### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS
 # Create a table in long format for each round of conversations
 conversation_table <- map2_dfr(
   df$LUCIDUserFacingHistory,
@@ -88,7 +86,8 @@ df <- ### THIS IS THE FILTER DF - ENGAGEMENT V. ENGAGEMENT
   filter(max_turn != 1 | is.na(max_turn)) |>  # Now we can filter out 1-turn chat bot interactions by keeping bigger than 1 or NA (article)
   filter(Q40_time_Page_Submit > 30 | is.na(Q40_time_Page_Submit))
 
-  #### ####
+#### ####
+
 
 #### HYPOTHESIS 1 ####
 # Test whether the two treatments actually taught them something statistically different from 0
@@ -138,7 +137,7 @@ newdata_2 <- data.frame(
   pre_afstand_total = mean(df$pre_afstand_total, na.rm = TRUE)
 )
 
-pred <- predict(pre_learning_reg, newdata = newdata_2, interval = "confidence")
+pred <- predict(engagement_pre_learning_reg, newdata = newdata_2, interval = "confidence")
 
 pred_df <- bind_cols(newdata_2, as.data.frame(pred)) |>
   left_join(n_df, by = "treatment") # Join the n's onto the plot df
@@ -166,19 +165,8 @@ p_pred <-
 
 p_pred
 
-## Robustness ##
-
-
 
 #### HYPOTHESIS 3 ####
-
-# Trust
-df |>
-  ggplot(aes(x = Tillid, y = læring_total)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = TRUE) +
-  theme_minimal() +
-  facet_wrap(~treatment)
 
 # LM for trust?
 reg_trust <-
@@ -258,7 +246,6 @@ summary(lm(post_viden ~ subjektiv_forståelse * treatment, data = df))
 
 summary(lm(læring_total ~ subjektiv_forståelse, data = df |> filter(treatment == "artikel")))
 
-# PLot the interaction
 # Plot the interaction
 
 model_h4 <- lm(post_viden ~ subjektiv_forståelse * treatment, data = df)
@@ -297,66 +284,4 @@ ggplot(pred_interaction_h4,
     plot.caption = element_text(margin = margin(t = 25)),
     legend.position = "bottom"
   )
-
-
-# # Visualize the correlation facetted
-# df |>
-#   ggplot(aes(y = post_viden, x = subjektiv_forståelse, groups = treatment)) +
-#   geom_point() +
-#   geom_smooth(method = "lm", se = TRUE) +
-#   theme_tufte(base_size = 14) +
-#   facet_wrap(~treatment, scales = "free_x")
-#
-
-
-# Exploration
-df_h4 <-
-  df |>
-  mutate(z_subjektiv_post = z_subjektiv_forståelse - z_post_viden)
-
-# Viz
-df_h4 |>
-  ggplot(aes(y = z_subjektiv_post, x = treatment)) +
-  geom_col()
-
-# Post knowledge and Subjective understanding
-summary(lm(z_subjektiv_forståelse ~ z_post_viden * treatment, data = df))
-
-# Learning and subjective understanding
-df |>
-  ggplot(aes(x = z_subjektiv_forståelse, y = læring_total)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = TRUE) +
-  theme_minimal() +
-  facet_wrap(~treatment)
-
-
-summary(lm(læring_total ~ subjektiv_forståelse + pre_afstand_total, data = df |> filter(treatment == "chat bot")))
-
-summary(lm(læring_total ~ subjektiv_forståelse + pre_afstand_total, data = df |> filter(treatment == "artikel")))
-
-# The relationship between subjective understanding and learning exists for article but not chat bot
-
-# Difference between post-knowledge and subjective understanding
-
-summary(lm(z_subjektiv_post ~ treatment, data = df_h4))
-
-
-#### HYPOTESE 5 ####
-
-# Let's look at the political sofistication var - I'm expecting it to be useless
-df |>
-  ggplot(aes(x = partier_folketing, y = after_stat(prop), group = 1)) +
-  geom_bar() +
-  scale_y_continuous(labels = scales::percent) +
-  scale_x_discrete(drop = FALSE) +
-  theme_tufte(base_size = 14) +
-  labs(title = "Andel af respondentsvar til, hvor mange sæder, der er i Folketinget", y = "Andel", x = "Svarmuligheder") +
-  theme(
-    axis.title.x = element_text(margin = margin(t = 15)),
-    axis.title.y = element_text(margin = margin(r = 15)))
-
-# It's useless, let's try to have a look at it anyway
-
-summary(lm(læring_total ~ partier_folketing + pre_afstand_total, data = df_analysis))
 
