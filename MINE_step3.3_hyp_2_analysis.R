@@ -37,28 +37,28 @@ df_cutoff_filtered <-
 
 # Set df for the entire regression results viz section here
 # df <- df_analysis
-df <- df_cutoff_filtered
+df <- df_cutoff_filtered # This is the default setting. Don't change
 # df <- df_failed
 
-## EXPORT TO READ ##
-df_export <- df |>
-  distinct(conv_id, LUCIDUserFacingHistory) |>
-  mutate(
-    conversation_clean = LUCIDUserFacingHistory |>
-      str_replace_all("\\[assistant\\]:", "\n\nASSISTANT:\n") |>
-      str_replace_all("\\[user\\]:", "\n\nUSER:\n")
-  )
-
-doc <- read_docx()
-
-for (i in seq_len(nrow(df_export))) {
-  doc <- doc |>
-    body_add_par(paste0("Conversation ID: ", df_export$conv_id[i]), style = "heading 1") |>
-    body_add_par(df_export$conversation_clean[i], style = "Normal") |>
-    body_add_break()
-}
-
-print(doc, target = "conversations_readable.docx")
+## EXPORT Conversations ## - This is only runnable with the researcher's data
+# df_export <- df |>
+#   distinct(conv_id, LUCIDUserFacingHistory) |>
+#   mutate(
+#     conversation_clean = LUCIDUserFacingHistory |>
+#       str_replace_all("\\[assistant\\]:", "\n\nASSISTANT:\n") |>
+#       str_replace_all("\\[user\\]:", "\n\nUSER:\n")
+#   )
+#
+# doc <- read_docx()
+#
+# for (i in seq_len(nrow(df_export))) {
+#   doc <- doc |>
+#     body_add_par(paste0("Conversation ID: ", df_export$conv_id[i]), style = "heading 1") |>
+#     body_add_par(df_export$conversation_clean[i], style = "Normal") |>
+#     body_add_break()
+# }
+#
+# print(doc, target = "conversations_readable.docx")
 
 
 # Check the variables
@@ -126,14 +126,9 @@ df_hyp_2_2 <-
     interaction_index_chars = (z_chars + z_rounds + z_time) / 3
   )
 
-# Look at learning distribution for the amount of turns used
-# conversation_table_joined |>
-#   group_by(conv_id) |>
-#   slice_max(turn_order, n = 1) |>
-#   ungroup() |>
-#   ggplot(aes(x = turn_order, y = læring_total)) +
-#   geom_point() +
-#   theme_minimal()
+# Export for external use
+df_hyp_2_2 |>
+  saveRDS("df_hyp_2_2.rds")
 
 # Interaction X Learning #
 
