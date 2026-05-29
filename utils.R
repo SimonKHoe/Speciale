@@ -4,20 +4,6 @@
 # NB! THIS UTLIS FILE IS NECESSARY TO RUN THE PLOTS THROUGHOUT THE PIPE.
 # IT DEFINES MY GGPLOT THEME
 
-# Setup
-# library(dplyr)
-# library(readr)
-# library(ggplot2)
-# library(forcats)
-# library(purrr)
-# library(stringr)
-# library(haven)
-# library(labelled)
-# library(tidyr)
-# library(dotwhisker)
-# library(ggeffects)
-# library(ggthemes)
-
 # Define my own ggplot theme
 
 theme_simon <- function(base_size = 12, caption_size = 10, ticks = TRUE) {
