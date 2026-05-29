@@ -15,6 +15,7 @@ library(dotwhisker)
 library(ggeffects)
 library(ggthemes)
 library(modelsummary)
+library(tidyverse)
 
 #### Load data ####
 df_analysis <-
@@ -41,32 +42,6 @@ df <- df_cutoff_filtered # This is the main group # 247
 #### ####
 
 #### Descriptives ####
-
-balance_tab <- tibble(
-  Variabel = c("Præ-treatment afstand", "Politisk sofistikation"),
-
-  Artikel = c(
-    mean(df$pre_afstand_total[df$treatment == "artikel"], na.rm = TRUE),
-    mean(df$folketing_dummy[df$treatment == "artikel"], na.rm = TRUE)
-  ),
-
-  Chatbot = c(
-    mean(df$pre_afstand_total[df$treatment == "chat bot"], na.rm = TRUE),
-    mean(df$folketing_dummy[df$treatment == "chat bot"], na.rm = TRUE)
-  ),
-
-  Difference = c(
-    coef(balance_pre)[2],
-    coef(balance_sof)[2]
-  ),
-
-  `p-værdi` = c(
-    summary(balance_pre)$coefficients[2,4],
-    summary(balance_sof)$coefficients[2,4]
-  )
-)
-
-balance_tab
 
 ### Speeders ###
 df |>

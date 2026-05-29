@@ -76,7 +76,7 @@ summary(h1_pre_learning_reg)
 # Create modelsummary for the two
 modelsummary(
   list(
-    "Bivariat" = bivariate,
+    "Bivariat" = h1_bivariate,
     "Kontrol" = h1_pre_learning_reg
   ),
   stars = TRUE,
@@ -343,34 +343,6 @@ modelsummary(
   output = "regressions/h4_regressions.tex"
 )
 
-# Marginal difference plot
-# vælg punkter langs x
-em <- emmeans(
-  model_h4,
-  ~ treatment | subjektiv_forståelse,
-  at = list(subjektiv_forståelse = seq(1, 5, by = 0.5))
-)
-
-# forskel mellem chatbot og artikel
-diffs <- contrast(em, method = "revpairwise")
-
-summary(diffs)
-
-diffs_df <- as.data.frame(summary(diffs, infer = TRUE))
-names(diffs_df)
-
-ggplot(diffs_df, aes(x = subjektiv_forståelse, y = estimate)) +
-  geom_line(size = 1) +
-  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = 0.1) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  labs(
-    x = "Subjektiv forståelse",
-    y = "Forskel (Chatbot - Artikel)",
-    title = "Marginal forskel mellem treatments"
-  ) +
-  theme_minimal()
-
-
 # Do chat bot users overestimate theselves?
 df$overconfidence <- scale(df$subjektiv_forståelse) - scale(df$post_viden)
 
@@ -502,33 +474,6 @@ t.test(
   df_h4$z_subjektiv_post[df_h4$treatment == "chat bot"],
   mu = 0
 )
-
-
-# Exploration
-# Post knowledge and Subjective understanding
-summary(lm(z_subjektiv_forståelse ~ z_post_viden * treatment, data = df))
-
-# Learning and subjective understanding
-df |>
-  ggplot(aes(x = z_subjektiv_forståelse, y = læring_total)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = TRUE) +
-  theme_minimal() +
-  facet_wrap(~treatment)
-
-
-# Look at learning
-summary(lm(læring_total ~ subjektiv_forståelse + pre_afstand_total, data = df))
-
-summary(lm(læring_total ~ subjektiv_forståelse + pre_afstand_total, data = df |> filter(treatment == "chat bot")))
-
-summary(lm(læring_total ~ subjektiv_forståelse + pre_afstand_total, data = df |> filter(treatment == "artikel")))
-
-# The relationship between subjective understanding and learning exists for article but not chat bot
-
-# Difference between post-knowledge and subjective understanding
-
-summary(lm(z_subjektiv_post ~ treatment, data = df_h4))
 
 
 #### HYPOTESE 5 ####

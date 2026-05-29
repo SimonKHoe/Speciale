@@ -91,6 +91,11 @@ conversation_table_joined <-
   conversation_table |>
   left_join(df, by = "conv_id")
 
+# Export for external use
+conversation_table_joined |>
+  select(-LUCIDUserFacingHistory) |>
+  saveRDS("conversation_table_joined.rds")
+
 
 #### HYPOTHESIS 2 ####
 
@@ -103,10 +108,17 @@ max_turn <-
   select(conv_id, turn_order) |>
   rename(max_turn = turn_order)
 
+# Join back
 df_hyp_2 <-
   df |>
   left_join(max_turn)
 
+# Export for use in step 3.2
+df_hyp_2 |>
+  select(-LUCIDUserFacingHistory) |>  # Remove the convos
+  saveRDS("df_hyp_2.rds")
+
+# This creates interaction variables from the convos
 df_hyp_2_2 <-
   df_hyp_2 |>
   mutate( # add variable, that countrs # units

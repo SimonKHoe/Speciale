@@ -1,6 +1,9 @@
 ### Created on: 26.05.27 ###
 ### Last edited: 26.05.27 ###
 
+# NOTE: The purpose of this file is to create a joined regtable for the different H1 regressions that
+# That are calculated in step4, step4.1, step4.5 and step5
+
 # Setup
 library(dplyr)
 library(readr)
@@ -15,7 +18,6 @@ library(dotwhisker)
 library(ggeffects)
 library(ggthemes)
 library(modelsummary)
-
 
 # LOADS ALL H1 HYPOTHESES FOR A JOINED TABLE #
 robust_learning_reg_sf <-

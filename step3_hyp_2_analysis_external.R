@@ -75,6 +75,12 @@ df <- df_cutoff_filtered # This is the default setting. Don't change
 #   left_join(df, by = "conv_id")
 #
 #
+# # Export for external use
+# conversation_table_joined |>
+#   select(-LUCIDUserFacingHistory) |>
+#   saveRDS("conversation_table_joined.rds")
+#
+#
 # #### HYPOTHESIS 2 ####
 #
 # # Index on regression granularity
@@ -131,6 +137,10 @@ df <- df_cutoff_filtered # This is the default setting. Don't change
 # Has the necessary variables, but not the conversations themselves
 df_hyp_2_2 <-
   readRDS("df_hyp_2_2.rds")
+
+# Load conversation table, which is a step before df_hyp_2_2 for descriptives at bottom
+conversation_table_joined <-
+  readRDS("conversation_table_joined.rds")
 
 # Interaction X Learning #
 
@@ -447,15 +457,6 @@ modelsummary(
 log_df_hyp_2 <-
   df_hyp_2_one_shot |>
   filter(one_shot != "ingen brugerforespørgsel") |>
-  mutate( # add variable, that countrs # units # Doing this again is not strictly necessary, but legacy
-    n_chars = nchar(
-      str_remove(
-        as.character(LUCIDUserFacingHistory),
-        "^\\[assistant\\]:.*?(?=\\[user\\]:)"
-      )
-    )
-  ) |>
-  mutate(conv_time_s = as.numeric(as.character(LUCIDTotalConvTimeMs)) / 1000) |> # Turn time with bot into seconds
   mutate( # Create index for interactivity
     log_rounds = log1p(max_turn), # Log transform the index this time
     log_time   = log1p(conv_time_s),

@@ -12,15 +12,23 @@ library(haven)
 library(labelled)
 
 # Load data
+# df <- # RESEARCHER VERSION
+#   read_sav("260428_ekstra.sav") |>
+#   mutate(
+#     across(where(is.character), as_factor), # All string vars to factors
+#     across(-all_of(c("Q9", "Q7", "Q48")) & where(is.labelled), haven::zap_labels), # Zap labels for numeric vars
+#     across(all_of(c("Q9", "Q7", "Q48")), as_factor) # keep these two as factors
+#   ) |>
+#   select(-Q47)
+
+## ANONYMIZED VERSION
 df <-
-  read_sav("260428_ekstra.sav") |>
+  read_sav("260528_data.sav") |> # Load the anonomyized data
   mutate(
     across(where(is.character), as_factor), # All string vars to factors
     across(-all_of(c("Q9", "Q7", "Q48")) & where(is.labelled), haven::zap_labels), # Zap labels for numeric vars
     across(all_of(c("Q9", "Q7", "Q48")), as_factor) # keep these two as factors
-  ) |>
-  select(-Q47)
-
+  )
 
 # Recode the df
 df_recoded <-
