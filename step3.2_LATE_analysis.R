@@ -39,7 +39,6 @@ df_cutoff_filtered <-
 # THIS IS THE ITT DF
 df <- df_cutoff_filtered
 
-
 # # THIS DEFINES THE LATE DF
 #
 # ### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS
@@ -80,13 +79,8 @@ df <- df_cutoff_filtered
 #   rename(max_turn = turn_order)
 
 # Load df_hyp_2
-df_hyp_2 <-
-  readRDS("df_hyp_2.rds")
-
-# Creates the variables for the LATE analysis based on the hyp_2 df
 df_late <- # THIS IS THE LATE DF
-  df_hyp_2 |>
-#  left_join(max_turn) |>
+  readRDS("df_hyp_2.rds") |>
   mutate(engaged_chatbot_dummy = if_else(!is.na(max_turn) & max_turn > 2, 1, 0)) |>  # Create the dummy on chat bot engagement
   mutate(treatment_dummy = if_else(treatment == "chat bot", 1, 0)) # Create numerical treatment dummy for easier IV interpretation
 

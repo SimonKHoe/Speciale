@@ -36,7 +36,6 @@ df_cutoff_filtered <-
 df <- df_cutoff_filtered
 
 
-
 #### HYPOTHESIS 1 ####
 # Test whether the two treatments actually taught them something statistically different from 0
 df_article <- # Filtered to the article for t-test

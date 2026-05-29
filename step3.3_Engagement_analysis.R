@@ -14,6 +14,7 @@ library(tidyr)
 library(dotwhisker)
 library(ggeffects)
 library(ggthemes)
+library(modelsummary)
 
 # #### Load data ####
 # df_analysis <-
@@ -80,20 +81,11 @@ library(ggthemes)
 #   df |>
 #   left_join(max_turn)
 
-# Import the appropriate hyp_2 df for this analysis with the engagement vars
-df_hyp_2 <-
-  readRDS("df_hyp_2.rds")
-
 # Turn df_hyp_2 (joined max_turns) into the new df
 df <- ### THIS IS THE FILTER DF - ENGAGEMENT V. ENGAGEMENT
-  df_hyp_2 |>
+  readRDS("df_hyp_2.rds") |>
   filter(max_turn != 1 | is.na(max_turn)) |>  # Now we can filter out 1-turn chat bot interactions by keeping bigger than 1 or NA (article)
   filter(Q40_time_Page_Submit > 30 | is.na(Q40_time_Page_Submit))
-
-# Export for external use
-
-
-#### ####
 
 
 #### HYPOTHESIS 1 ####
@@ -120,6 +112,7 @@ summary(lm(læring_total ~ treatment, data = df))
 # Pre-learning control
 engagement_pre_learning_reg <- lm(læring_total ~ treatment + pre_afstand_total, data = df)
 
+# Export it for the joined H1 table
 engagement_pre_learning_reg |>
   saveRDS("engagement_pre_learning_reg.rds")
 
@@ -177,16 +170,12 @@ p_pred
 
 # LM for trust?
 reg_trust <-
-  lm(Tillid ~ treatment, data = df_analysis)
-
-# There is a significant difference in trust between the two information sources
+  lm(Tillid ~ treatment, data = df)
 
 summary(reg_trust) # More trust for the article
 
 # No trust (baseline model)
 summary(lm(læring_total ~ treatment + pre_afstand_total, data = df))
-
-
 
 # What happens then if we control for trust with learning?
 h3_robustness_trust <- lm(læring_total ~ treatment + Tillid + pre_afstand_total, data = df)
@@ -194,7 +183,7 @@ h3_robustness_trust <- lm(læring_total ~ treatment + Tillid + pre_afstand_total
 # Export the robustness check
 modelsummary(
   list(
-    "Robust.Eng" = h3_robustness_trust
+    "Engagerede" = h3_robustness_trust
   ),
   stars = TRUE,
   fmt = 3,
@@ -222,21 +211,9 @@ summary(lm(læring_total ~ Tillid + pre_afstand_total, data = df |> filter(treat
 
 # Interaktion
 summary(lm(læring_total ~ Tillid * treatment + pre_afstand_total, data = df))
-# We lack power for the interaction - but could also be that it isn't there
-
-
-# ANCOVA Robustness
-summary(lm(post_afstand_total ~ treatment + Tillid + pre_afstand_total, data = df))
-
-# Interaction
-summary(lm(læring_total ~ treatment*Tillid + pre_afstand_total, data = df))
-# The difference between the treatments isn't conditioned by the level of trust, it is trust itself that has effect
-
 
 # What happens if we only regress Learning on trust for chat bot
 summary(lm(læring_total ~ Tillid, data = df |> filter(treatment == "chat bot")))
-
-
 
 #### HYPOTESE 4 ####
 

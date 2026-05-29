@@ -20,7 +20,6 @@ library(modelsummary)
 df_analysis <-
   read_rds("df_analysis.rds")
 
-
 # Define the df with the failed interactions filtered and manipulation check
 df_failed <- # THis becomes ITT
   df_analysis |>
@@ -34,9 +33,8 @@ df_cutoff_filtered <-
   filter((treatment == "chat bot" & after_cutoff == "after" | treatment == "artikel"))
 
 # Set df for the entire regression results viz section here
-# df <- df_analysis
-df <- df_cutoff_filtered
-# df <- df_failed
+df <- df_cutoff_filtered # THIS IS THE ITT DF
+
 
 #### ####
 
@@ -126,8 +124,6 @@ robust_learning_reg_source |>
 # robust_learning_reg_source_2 <- lm(læring_total ~ treatment + pre_afstand_total, data = df_failed |> filter(source_prompt != "Før fix af prompt - personlige opslag"))
 
 
-
-
 # Tæl de to grupper i regressionen
 df_failed |>
   filter(source_prompt != "Før fix af prompt - personlige opslag") |>
@@ -174,6 +170,5 @@ modelsummary(
 # Attention check source prompt
 attention_check_2 <- lm(læring_total ~ treatment + pre_afstand_total + source_prompt + attention_check_dummy, data = df_failed)
 
-# Export attention check reg
 
 

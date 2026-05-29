@@ -16,8 +16,119 @@ library(ggthemes)
 library(officer)
 library(ggeffects)
 
+## Load data ##
+df_analysis <-
+  read_rds("df_analysis.rds") |>
+  mutate(conv_id = row_number())
+
+
+# Define the df with the failed interactions filtered and manipulation check
+df_failed <-
+  df_analysis |>
+  #  filter(Q8_1 == 0 | is.na(Q8_1)) |>
+  #  filter(partier_folketing == "179")
+  filter(Progress > 75)
+
+# Define a df where cutoff is introduced
+df_cutoff_filtered <-
+  df_failed |>
+  filter((treatment == "chat bot" & after_cutoff == "after" | treatment == "artikel")) |>
+  mutate(conv_id = row_number())
+
+# This is the ITT DF
+df <- df_cutoff_filtered # This is the default setting. Don't change
+
+
+# THIS PART IS NOT RUNNABLE WITH THE ANONYMIZED DATA, BUT IS KEPT OUTCOMMENTED
+# FOR TRANSPARENCY
+
+#### THE CREATION PIPE OF HYP_2 AND HYP 2_2 AND TEXT EXPORT STARTS ####
+
+# # Check the variables
+# LUCIDUserfacinghistory <- df |> pull(LUCIDUserFacingHistory)
+#
+# # Create a table in long format for each round of conversations
+# conversation_table <- map2_dfr(
+#   df$LUCIDUserFacingHistory,
+#   seq_len(nrow(df)),
+#   \(txt, id) {
+#     tibble(raw = txt, conv_id = id) %>%
+#       mutate(turns = str_split(
+#         raw,
+#         "\\s*(?=\\[(?:assistant|user)\\]:)",
+#         simplify = FALSE
+#       )) %>%
+#       unnest(turns) %>%
+#       filter(turns != "") %>%
+#       mutate(
+#         turn_order = row_number(),
+#         role = str_extract(turns, "(?<=\\[)(assistant|user)(?=\\]:)"),
+#         content = str_remove(turns, "^\\[(?:assistant|user)\\]:\\s*")
+#       ) %>%
+#       select(conv_id, turn_order, role, content)
+#   }
+# )
+#
+# # Join df tilbage på, og lav interaktionsvariable
+# conversation_table_joined <-
+#   conversation_table |>
+#   left_join(df, by = "conv_id")
+#
+#
+# #### HYPOTHESIS 2 ####
+#
+# # Index on regression granularity
+# max_turn <-
+#   conversation_table_joined |>
+#   group_by(conv_id) |>
+#   slice_max(turn_order, n = 1) |>
+#   ungroup() |>
+#   select(conv_id, turn_order) |>
+#   rename(max_turn = turn_order)
+#
+# # Join back
+# df_hyp_2 <-
+#   df |>
+#   left_join(max_turn)
+#
+# # Export for use in step 3.2
+# df_hyp_2 |>
+#   select(-LUCIDUserFacingHistory) |>  # Remove the convos
+#   saveRDS("df_hyp_2.rds")
+#
+# # This creates interaction variables from the convos
+# df_hyp_2_2 <-
+#   df_hyp_2 |>
+#   mutate( # add variable, that countrs # units
+#     n_chars = nchar(
+#       str_remove(
+#         as.character(LUCIDUserFacingHistory),
+#         "^\\[assistant\\]:.*?(?=\\[user\\]:)"
+#       )
+#     )
+#   ) |>
+#   mutate(conv_time_s = as.numeric(as.character(LUCIDTotalConvTimeMs)) / 1000) |> # Turn time with bot into seconds
+#   mutate( # Create index for interactivity
+#     z_chars  = as.numeric(scale(n_chars)),
+#     z_rounds = as.numeric(scale(max_turn)),
+#     z_time   = as.numeric(scale(conv_time_s)),
+#     interaction_index = (z_rounds + z_time) / 2,
+#     interaction_index_chars = (z_chars + z_rounds + z_time) / 3
+#   )
+#
+# # Export for external use
+# df_hyp_2_2 |>
+#   select(-LUCIDUserFacingHistory) |>
+#   saveRDS("df_hyp_2_2.rds")
+
+### THE CREATION OF HYP_2 and HYP_2_2 DATA ENDS ###
+
+
+
+### ANALYSIS STARTS ###
+
 # Load the df's needed to run script.
-# Has the necessary variables, but not the conversations themself
+# Has the necessary variables, but not the conversations themselves
 df_hyp_2_2 <-
   readRDS("df_hyp_2_2.rds")
 
