@@ -36,53 +36,57 @@ df_cutoff_filtered <-
   filter((treatment == "chat bot" & after_cutoff == "after" | treatment == "artikel")) |>
   mutate(conv_id = row_number())
 
-# THIS IS THE LATE DF
-# df <- df_analysis
+# THIS IS THE ITT DF
 df <- df_cutoff_filtered
-# df <- df_failed
 
-# THIS DEFINES THE LATE DF
 
-### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS
-# Create a table in long format for each round of conversations
-conversation_table <- map2_dfr(
-  df$LUCIDUserFacingHistory,
-  seq_len(nrow(df)),
-  \(txt, id) {
-    tibble(raw = txt, conv_id = id) %>%
-      mutate(turns = str_split(
-        raw,
-        "\\s*(?=\\[(?:assistant|user)\\]:)",
-        simplify = FALSE
-      )) %>%
-      unnest(turns) %>%
-      filter(turns != "") %>%
-      mutate(
-        turn_order = row_number(),
-        role = str_extract(turns, "(?<=\\[)(assistant|user)(?=\\]:)"),
-        content = str_remove(turns, "^\\[(?:assistant|user)\\]:\\s*")
-      ) %>%
-      select(conv_id, turn_order, role, content)
-  }
-)
+# # THIS DEFINES THE LATE DF
+#
+# ### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS
+# # Create a table in long format for each round of conversations
+# conversation_table <- map2_dfr(
+#   df$LUCIDUserFacingHistory,
+#   seq_len(nrow(df)),
+#   \(txt, id) {
+#     tibble(raw = txt, conv_id = id) %>%
+#       mutate(turns = str_split(
+#         raw,
+#         "\\s*(?=\\[(?:assistant|user)\\]:)",
+#         simplify = FALSE
+#       )) %>%
+#       unnest(turns) %>%
+#       filter(turns != "") %>%
+#       mutate(
+#         turn_order = row_number(),
+#         role = str_extract(turns, "(?<=\\[)(assistant|user)(?=\\]:)"),
+#         content = str_remove(turns, "^\\[(?:assistant|user)\\]:\\s*")
+#       ) %>%
+#       select(conv_id, turn_order, role, content)
+#   }
+# )
+#
+# # Join df tilbage på, og lav interaktionsvariable
+# conversation_table_joined <-
+#   conversation_table |>
+#   left_join(df, by = "conv_id")
+#
+# # Index on regression granularity
+# max_turn <-
+#   conversation_table_joined |>
+#   group_by(conv_id) |>
+#   slice_max(turn_order, n = 1) |>
+#   ungroup() |>
+#   select(conv_id, turn_order) |>
+#   rename(max_turn = turn_order)
 
-# Join df tilbage på, og lav interaktionsvariable
-conversation_table_joined <-
-  conversation_table |>
-  left_join(df, by = "conv_id")
+# Load df_hyp_2
+df_hyp_2 <-
+  readRDS("df_hyp_2.rds")
 
-# Index on regression granularity
-max_turn <-
-  conversation_table_joined |>
-  group_by(conv_id) |>
-  slice_max(turn_order, n = 1) |>
-  ungroup() |>
-  select(conv_id, turn_order) |>
-  rename(max_turn = turn_order)
-
-df_late <- # Left joins max turns back onto OG df
-  df |>
-  left_join(max_turn) |>
+# Creates the variables for the LATE analysis based on the hyp_2 df
+df_late <- # THIS IS THE LATE DF
+  df_hyp_2 |>
+#  left_join(max_turn) |>
   mutate(engaged_chatbot_dummy = if_else(!is.na(max_turn) & max_turn > 2, 1, 0)) |>  # Create the dummy on chat bot engagement
   mutate(treatment_dummy = if_else(treatment == "chat bot", 1, 0)) # Create numerical treatment dummy for easier IV interpretation
 

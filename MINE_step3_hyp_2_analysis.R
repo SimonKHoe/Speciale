@@ -16,9 +16,120 @@ library(ggthemes)
 library(officer)
 library(ggeffects)
 
-# Load the df's needed to run script
+## Load data ##
+df_analysis <-
+  read_rds("df_analysis.rds") |>
+  mutate(conv_id = row_number())
+
+
+# Define the df with the failed interactions filtered and manipulation check
+df_failed <-
+  df_analysis |>
+#  filter(Q8_1 == 0 | is.na(Q8_1)) |>
+#  filter(partier_folketing == "179")
+  filter(Progress > 75)
+
+# Define a df where cutoff is introduced
+df_cutoff_filtered <-
+  df_failed |>
+  filter((treatment == "chat bot" & after_cutoff == "after" | treatment == "artikel")) |>
+  mutate(conv_id = row_number())
+
+# Set df for the entire regression results viz section here
+# df <- df_analysis
+df <- df_cutoff_filtered # This is the default setting. Don't change
+# df <- df_failed
+
+## EXPORT Conversations ## - This is only runnable with the researcher's data
+# df_export <- df |>
+#   distinct(conv_id, LUCIDUserFacingHistory) |>
+#   mutate(
+#     conversation_clean = LUCIDUserFacingHistory |>
+#       str_replace_all("\\[assistant\\]:", "\n\nASSISTANT:\n") |>
+#       str_replace_all("\\[user\\]:", "\n\nUSER:\n")
+#   )
+#
+# doc <- read_docx()
+#
+# for (i in seq_len(nrow(df_export))) {
+#   doc <- doc |>
+#     body_add_par(paste0("Conversation ID: ", df_export$conv_id[i]), style = "heading 1") |>
+#     body_add_par(df_export$conversation_clean[i], style = "Normal") |>
+#     body_add_break()
+# }
+#
+# print(doc, target = "conversations_readable.docx")
+
+
+# Check the variables
+LUCIDUserfacinghistory <- df |> pull(LUCIDUserFacingHistory)
+
+# Create a table in long format for each round of conversations
+conversation_table <- map2_dfr(
+  df$LUCIDUserFacingHistory,
+  seq_len(nrow(df)),
+  \(txt, id) {
+    tibble(raw = txt, conv_id = id) %>%
+      mutate(turns = str_split(
+        raw,
+        "\\s*(?=\\[(?:assistant|user)\\]:)",
+        simplify = FALSE
+      )) %>%
+      unnest(turns) %>%
+      filter(turns != "") %>%
+      mutate(
+        turn_order = row_number(),
+        role = str_extract(turns, "(?<=\\[)(assistant|user)(?=\\]:)"),
+        content = str_remove(turns, "^\\[(?:assistant|user)\\]:\\s*")
+      ) %>%
+      select(conv_id, turn_order, role, content)
+  }
+)
+
+# Join df tilbage på, og lav interaktionsvariable
+conversation_table_joined <-
+  conversation_table |>
+  left_join(df, by = "conv_id")
+
+
+#### HYPOTHESIS 2 ####
+
+# Index on regression granularity
+max_turn <-
+  conversation_table_joined |>
+  group_by(conv_id) |>
+  slice_max(turn_order, n = 1) |>
+  ungroup() |>
+  select(conv_id, turn_order) |>
+  rename(max_turn = turn_order)
+
+df_hyp_2 <-
+  df |>
+  left_join(max_turn)
+
 df_hyp_2_2 <-
-  readRDS("df_hyp_2_2.rds")
+  df_hyp_2 |>
+  mutate( # add variable, that countrs # units
+    n_chars = nchar(
+      str_remove(
+        as.character(LUCIDUserFacingHistory),
+        "^\\[assistant\\]:.*?(?=\\[user\\]:)"
+      )
+    )
+  ) |>
+  mutate(conv_time_s = as.numeric(as.character(LUCIDTotalConvTimeMs)) / 1000) |> # Turn time with bot into seconds
+  mutate( # Create index for interactivity
+    z_chars  = as.numeric(scale(n_chars)),
+    z_rounds = as.numeric(scale(max_turn)),
+    z_time   = as.numeric(scale(conv_time_s)),
+    interaction_index = (z_rounds + z_time) / 2,
+    interaction_index_chars = (z_chars + z_rounds + z_time) / 3
+  )
+
+# Export for external use
+df_hyp_2_2 |>
+  select(-LUCIDUserFacingHistory) |>
+  saveRDS("df_hyp_2_2.rds")
 
 # Interaction X Learning #
 
@@ -78,7 +189,7 @@ pred_interaction <- ggpredict(
 
 h2_interaktion_tekst.pdf <-
   ggplot(pred_interaction,
-         aes(x = x, y = predicted, color = group, fill = group)) +
+       aes(x = x, y = predicted, color = group, fill = group)) +
   geom_line(linewidth = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
               alpha = 0.04, color = NA) +
@@ -272,7 +383,7 @@ h2_excluded_interaktion_tekst.pdf <-
     alpha = 0.7
   ) +
   # geom_segment(aes(y = 0, xend = 3), colour = "black", alpha = 0.7) +
-  #  geom_hline(yintercept = 0) +
+#  geom_hline(yintercept = 0) +
   labs(
     x = "Chat bot interaktionsniveau (normaliseret)",
     y = "Forudsagt læring",
@@ -457,27 +568,27 @@ p1 <-
   ggplot(aes(x = turn_order)) +
   geom_bar() +
   scale_x_continuous(breaks = seq(1, 30, by = 2)) +
-  #  scale_y_continuous(limits = c(0, 13), breaks = seq(0, 13, by = 4)) + # Change the y-axis truncation here, when answers come in
+#  scale_y_continuous(limits = c(0, 13), breaks = seq(0, 13, by = 4)) + # Change the y-axis truncation here, when answers come in
   theme_tufte() +
   labs(x = str_wrap("Antal beskeder i chat bot samtalen", 25), y = "Frekvens (absolutte tal)") +
   theme(
-    axis.title.x = element_text(margin = margin(t = 15)),
-    axis.ticks.x = element_blank(),
-    title = element_text(hjust = 0.5)
+        axis.title.x = element_text(margin = margin(t = 15)),
+        axis.ticks.x = element_blank(),
+        title = element_text(hjust = 0.5)
   )
 
 p2 <-
   df_hyp_2_2 |>
   ggplot(aes(x = conv_time_s)) +
   geom_histogram(bins = 30, binwidth = 40) +
-  #  scale_y_continuous(limits = c(0, 13), breaks = seq(0, 13, by = 4)) + # Change the y-axis truncation here, when answers come in
+#  scale_y_continuous(limits = c(0, 13), breaks = seq(0, 13, by = 4)) + # Change the y-axis truncation here, when answers come in
   theme_tufte() +
   labs(x = "Sekunder brugt med chat bot", y = "Frekvens") +
   theme(
-    axis.title.x = element_text(margin = margin(t = 15)),
-    axis.title.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    title = element_text(hjust = 0.5)
+        axis.title.x = element_text(margin = margin(t = 15)),
+        axis.title.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        title = element_text(hjust = 0.5)
   )
 
 
@@ -486,14 +597,14 @@ p3 <-
   filter(treatment == "chat bot") |>
   ggplot(aes(x = n_chars)) +
   geom_histogram(bins = 30, binwidth = 500) +
-  #  scale_y_continuous(limits = c(0, 13), breaks = seq(0, 13, by = 4)) + # Change the y-axis truncation here, when answers come in
+#  scale_y_continuous(limits = c(0, 13), breaks = seq(0, 13, by = 4)) + # Change the y-axis truncation here, when answers come in
   theme_tufte() +
   labs(x = "Antal anslag i samtalen", y = "Frekvens") +
   theme(
-    axis.title.x = element_text(margin = margin(t = 15)),
-    axis.title.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    title = element_text(hjust = 0.5)
+        axis.title.x = element_text(margin = margin(t = 15)),
+        axis.title.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        title = element_text(hjust = 0.5)
   )
 
 
@@ -536,3 +647,7 @@ ggsave(
   height = 5,
   width = 6
 )
+
+
+
+

@@ -15,76 +15,83 @@ library(dotwhisker)
 library(ggeffects)
 library(ggthemes)
 
-#### Load data ####
-df_analysis <-
-  read_rds("df_analysis.rds") |>
-  mutate(conv_id = row_number())
+# #### Load data ####
+# df_analysis <-
+#   read_rds("df_analysis.rds") |>
+#   mutate(conv_id = row_number())
+#
+# # Define the df with the failed interactions filtered and manipulation check
+# df_failed <- # THis becomes ITT
+#   df_analysis |>
+#   #  filter(Q8_1 == 0 | is.na(Q8_1)) |>
+#   #  filter(partier_folketing == "179") |>
+#   filter(Progress > 75) # Remove people who haven't done post-placements
+#
+# # Define a df where cutoff is introduced
+# df_cutoff_filtered <-
+#   df_failed |>
+#   filter((treatment == "chat bot" & after_cutoff == "after" | treatment == "artikel")) |>
+#   mutate(conv_id = row_number())
+#
+# # THIS IS THE ITT DF - don't adjust - filter will further down
+# # df <- df_analysis
+# df <- df_cutoff_filtered
+# # df <- df_failed
+#
+#
+# ### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS
+# # Create a table in long format for each round of conversations
+# conversation_table <- map2_dfr(
+#   df$LUCIDUserFacingHistory,
+#   seq_len(nrow(df)),
+#   \(txt, id) {
+#     tibble(raw = txt, conv_id = id) %>%
+#       mutate(turns = str_split(
+#         raw,
+#         "\\s*(?=\\[(?:assistant|user)\\]:)",
+#         simplify = FALSE
+#       )) %>%
+#       unnest(turns) %>%
+#       filter(turns != "") %>%
+#       mutate(
+#         turn_order = row_number(),
+#         role = str_extract(turns, "(?<=\\[)(assistant|user)(?=\\]:)"),
+#         content = str_remove(turns, "^\\[(?:assistant|user)\\]:\\s*")
+#       ) %>%
+#       select(conv_id, turn_order, role, content)
+#   }
+# )
+#
+# # Join df tilbage på, og lav interaktionsvariable
+# conversation_table_joined <-
+#   conversation_table |>
+#   left_join(df, by = "conv_id")
+#
+# # Index on regression granularity
+# max_turn <-
+#   conversation_table_joined |>
+#   group_by(conv_id) |>
+#   slice_max(turn_order, n = 1) |>
+#   ungroup() |>
+#   select(conv_id, turn_order) |>
+#   rename(max_turn = turn_order)
+#
+# df_hyp_2 <- # Left joins max turns back onto OG df
+#   df |>
+#   left_join(max_turn)
 
-# Define the df with the failed interactions filtered and manipulation check
-df_failed <- # THis becomes ITT
-  df_analysis |>
-  #  filter(Q8_1 == 0 | is.na(Q8_1)) |>
-  #  filter(partier_folketing == "179") |>
-  filter(Progress > 75) # Remove people who haven't done post-placements
-
-# Define a df where cutoff is introduced
-df_cutoff_filtered <-
-  df_failed |>
-  filter((treatment == "chat bot" & after_cutoff == "after" | treatment == "artikel")) |>
-  mutate(conv_id = row_number())
-
-# THIS IS THE ITT DF - don't adjust - filter will further down
-# df <- df_analysis
-df <- df_cutoff_filtered
-# df <- df_failed
-
-
-### THIS PULLS OUT MAX_TURNS FROM INTERACTIONS
-# Create a table in long format for each round of conversations
-conversation_table <- map2_dfr(
-  df$LUCIDUserFacingHistory,
-  seq_len(nrow(df)),
-  \(txt, id) {
-    tibble(raw = txt, conv_id = id) %>%
-      mutate(turns = str_split(
-        raw,
-        "\\s*(?=\\[(?:assistant|user)\\]:)",
-        simplify = FALSE
-      )) %>%
-      unnest(turns) %>%
-      filter(turns != "") %>%
-      mutate(
-        turn_order = row_number(),
-        role = str_extract(turns, "(?<=\\[)(assistant|user)(?=\\]:)"),
-        content = str_remove(turns, "^\\[(?:assistant|user)\\]:\\s*")
-      ) %>%
-      select(conv_id, turn_order, role, content)
-  }
-)
-
-# Join df tilbage på, og lav interaktionsvariable
-conversation_table_joined <-
-  conversation_table |>
-  left_join(df, by = "conv_id")
-
-# Index on regression granularity
-max_turn <-
-  conversation_table_joined |>
-  group_by(conv_id) |>
-  slice_max(turn_order, n = 1) |>
-  ungroup() |>
-  select(conv_id, turn_order) |>
-  rename(max_turn = turn_order)
-
-df_hyp_2 <- # Left joins max turns back onto OG df
-  df |>
-  left_join(max_turn)
+# Import the appropriate hyp_2 df for this analysis with the engagement vars
+df_hyp_2 <-
+  readRDS("df_hyp_2.rds")
 
 # Turn df_hyp_2 (joined max_turns) into the new df
 df <- ### THIS IS THE FILTER DF - ENGAGEMENT V. ENGAGEMENT
   df_hyp_2 |>
   filter(max_turn != 1 | is.na(max_turn)) |>  # Now we can filter out 1-turn chat bot interactions by keeping bigger than 1 or NA (article)
   filter(Q40_time_Page_Submit > 30 | is.na(Q40_time_Page_Submit))
+
+# Export for external use
+
 
 #### ####
 

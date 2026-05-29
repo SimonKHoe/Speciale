@@ -33,10 +33,7 @@ df_cutoff_filtered <-
   mutate(conv_id = row_number())
 
 # THIS IS THE ITT DF
-# You can run ITT results with different filters by adjusting here
-# df <- df_analysis
 df <- df_cutoff_filtered
-# df <- df_failed
 
 
 
